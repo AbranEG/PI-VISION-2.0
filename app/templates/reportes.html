@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+{% block head %}
+  <style>
+    :root { --accent: var(--brand-ink) }
+    .controls .sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 4px }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: var(--surface); border: 1px solid var(--border);
+                border-radius: var(--radius); padding: 10px 12px; margin-bottom: 14px }
+    .controls label { color: var(--ink-3); font-size: .8rem; display: inline-flex; gap: 6px; align-items: center }
+    .controls input, .controls select { width: auto; padding: 6px 8px }
+    .sp { flex: 1 }
+    .period { color: var(--ink-2); font-size: .9rem; margin: -4px 0 14px }
+
+    .kpis { margin-bottom: 16px }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px }
+    .panel { margin-bottom: 16px } .panel + .panel { margin-top: 0 }
+    .panel h2 { font-size: 1rem; margin-bottom: 2px }
+    .panel .sub { color: var(--ink-3); font-size: .82rem; margin-bottom: 10px }
+    .panel .row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .85rem; color: var(--ink-2); margin-bottom: 8px }
+    .legend span { display: inline-flex; align-items: center; gap: 6px }
+    .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block }
+    /* Solo las gráficas (no los íconos de la barra superior) */
+    [id$="-chart"] svg { display: block; width: 100%; height: auto; overflow: visible }
+    [id$="-chart"] svg text { fill: var(--ink-3); font-size: 11px; font-family: inherit }
+    [id$="-chart"] svg .val { fill: var(--ink-2); font-size: 11px }
+    .empty { color: var(--ink-3); text-align: center; padding: 30px 0; font-size: .9rem }
+    .linkish { background: none; border: none; color: var(--accent); cursor: pointer; font: inherit; font-size: .82rem; padding: 0 }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums }
+    th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid) }
+    th { color: var(--ink-3); font-weight: 600 }
+    td.n, th.n { text-align: right }
+    .tablewrap { max-height: 260px; overflow: auto; margin-top: 8px }
+    #tip { position: fixed; pointer-events: none; background: var(--surface-3); color: var(--ink); border: 1px solid var(--axis); border-radius: 6px;
+           padding: 6px 9px; font-size: .82rem; z-index: 50; display: none; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.4) }
+    #tip b { font-variant-numeric: tabular-nums }
+    .note { color: var(--ink-3); font-size: .78rem; margin-top: 6px }
+    @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr } }
+
+    @media print {
+      .controls, .linkish, #tip { display: none !important }
+      .grid2 { grid-template-columns: 1fr 1fr }
+      .print-head { display: block !important }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="print-head" style="display:none; margin-bottom:12px">
+    <strong>PiVision IA · Reporte de actividad</strong> · Tecnológico Nacional de México, campus Tijuana
+  </div>
+  <div class="page-head">
+    <div>
+      <h1>Reportes y estadísticas</h1>
+      <p>Actividad por periodo y cámara. Exporta los datos o imprime el reporte para el expediente.</p>
+    </div>
+  </div>
+
+
+  <section class="controls no-print" aria-label="Periodo y filtros">
+    <span class="sr-only">Periodo:</span>
+    <button class="btn" data-p="hoy">Hoy</button>
+    <button class="btn" data-p="ayer">Ayer</button>
+    <button class="btn on" data-p="7">7 días</button>
+    <button class="btn" data-p="30">30 días</button>
+    <span class="sep" aria-hidden="true"></span>
+    <label>Desde <input type="date" id="desde"></label>
+    <label>Hasta <input type="date" id="hasta"></label>
+    <label>Cámara
+      <select id="camara"><option value="">Todas</option>
+        {% for cam_id in camera_ids %}<option value="{{ cam_id }}">Cámara {{ cam_id }}</option>{% endfor %}
+      </select>
+    </label>
+    <span class="sp"></span>
+    <a class="btn" id="csv" href="#" title="Columnas claras en español, con descripción de cada evento">⬇ Exportar CSV</a>
+    <a class="btn" id="csvfull" href="#" title="Campos originales de la base de datos y datos técnicos (JSON)">⬇ Datos completos</a>
+    <button class="btn primary" onclick="window.print()">🖨 Imprimir / PDF</button>
+  </section>
+  <p class="period" id="periodo"></p>
+
+  <section class="kpis" id="kpis" aria-label="Indicadores del periodo"></section>
+
+  <section class="panel">
+    <div class="row"><h2>Actividad</h2><button class="linkish" data-table="t-actividad">Ver como tabla</button></div>
+    <p class="sub" id="act-sub">Eventos por periodo, por tipo</p>
+    <div class="legend" id="act-legend"></div>
+    <div id="act-chart"></div>
+    <div class="tablewrap hidden" id="t-actividad"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="row"><h2>Mapa de calor</h2><button class="linkish" data-table="t-calor">Ver como tabla</button></div>
+      <p class="sub">Eventos por día de la semana y hora (sin conteo de personas)</p>
+      <div id="heat-chart"></div>
+      <div class="tablewrap hidden" id="t-calor"></div>
+    </section>
+    <section class="panel">
+      <h2>Personas en cuadro</h2>
+      <p class="sub" id="ppl-sub">Máximo simultáneo por periodo</p>
+      <div id="ppl-chart"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="panel">
+      <h2>Objetos detectados (Hailo)</h2>
+      <p class="sub">Eventos por clase y confianza media</p>
+      <div id="obj-chart"></div>
+    </section>
+    <section class="panel">
+      <h2>Rostros, gestos y cruces</h2>
+      <p class="sub">Totales del periodo</p>
+      <div id="misc"></div>
+    </section>
+  </div>
+
+  <div id="tip" role="tooltip"></div>
+
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const TYPES = [  // orden fijo = orden de apilado y de color
+      { k: 'motion',     n: 'Movimiento' },
+      { k: 'face',       n: 'Rostro' },
+      { k: 'gesture',    n: 'Gesto' },
+      { k: 'line_cross', n: 'Cruce de línea' },
+      { k: 'object',     n: 'Objeto' },
+    ];
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    const color = k => css(`--t-${k}`);
+    const $ = s => document.querySelector(s);
+    const NS = 'http://www.w3.org/2000/svg';
+    const fmt = n => Number(n).toLocaleString('es-MX');
+    const pad = n => String(n).padStart(2, '0');
+    const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const lblDay = s => `${Number(s.slice(8, 10))} ${MESES[Number(s.slice(5, 7)) - 1]}`;
+
+    function svgEl(tag, attrs, parent) {
+      const e = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+      if (parent) parent.appendChild(e);
+      return e;
+    }
+    // ---------- tooltip
+    const tip = $('#tip');
+    function hover(el, html) {
+      el.addEventListener('mousemove', e => {
+        tip.innerHTML = html; tip.style.display = 'block';
+        const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
+        tip.style.left = x + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+      });
+      el.addEventListener('mouseleave', () => tip.style.display = 'none');
+    }
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    // ---------- periodo
+    let periodo = '7';
+    function rango() {
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      const add = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+      if (periodo === 'hoy') return [hoy, add(hoy, 1)];
+      if (periodo === 'ayer') return [add(hoy, -1), hoy];
+      if (periodo === 'custom') {
+        const d0 = $('#desde').value ? new Date($('#desde').value + 'T00:00') : add(hoy, -6);
+        const d1 = $('#hasta').value ? add(new Date($('#hasta').value + 'T00:00'), 1) : add(hoy, 1);
+        return [d0, d1];
+      }
+      return [add(hoy, -(Number(periodo) - 1)), add(hoy, 1)];
+    }
+    document.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => {
+      periodo = b.dataset.p; $('#desde').value = ''; $('#hasta').value = ''; load();
+    }));
+    ['#desde', '#hasta'].forEach(s => $(s).addEventListener('change', () => { periodo = 'custom'; load(); }));
+    $('#camara').addEventListener('change', load);
+    document.querySelectorAll('[data-table]').forEach(b => b.addEventListener('click', () => {
+      const t = document.getElementById(b.dataset.table); t.classList.toggle('hidden');
+      b.textContent = t.classList.contains('hidden') ? 'Ver como tabla' : 'Ocultar tabla';
+    }));
+
+    // Lista completa de cubetas (horas o días) para que los huecos se vean como cero
+    function cubetas(d0, d1, bucket) {
+      const out = [], d = new Date(d0);
+      while (d < d1) {
+        out.push(bucket === 'hour' ? `${ymd(d)} ${pad(d.getHours())}` : ymd(d));
+        bucket === 'hour' ? d.setHours(d.getHours() + 1) : d.setDate(d.getDate() + 1);
+      }
+      return out;
+    }
+    const lblBucket = (b, bucket, multiDay) => bucket === 'hour'
+      ? (multiDay ? `${lblDay(b)} ${b.slice(11, 13)}:00` : `${b.slice(11, 13)}:00`) : lblDay(b);
+
+    // ---------- carga
+    async function load() {
+      document.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('on', b.dataset.p === periodo));
+      const [d0, d1] = rango();
+      const p = new URLSearchParams({ since: `${ymd(d0)} 00:00`, until: `${ymd(d1)} 00:00` });
+      if ($('#camara').value) p.set('camera', $('#camara').value);
+      $('#csv').href = `/api/v1/events/export.csv?${p}`;
+      $('#csvfull').href = `/api/v1/events/export_full.csv?${p}`;
+      const last = new Date(d1); last.setDate(last.getDate() - 1);
+      $('#periodo').textContent = `Periodo: ${lblDay(ymd(d0))} ${d0.getFullYear()}` +
+        (ymd(d0) === ymd(last) ? '' : ` – ${lblDay(ymd(last))} ${last.getFullYear()}`) +
+        ($('#camara').value ? ` · Cámara ${$('#camara').value}` : ' · Todas las cámaras');
+      const r = await fetch(`/api/v1/reports?${p}`);
+      if (r.status === 401) { location.href = '/login'; return; }
+      const R = await r.json();
+      const bs = cubetas(d0, d1, R.bucket);
+      const multiDay = (d1 - d0) > 864e5;
+      kpis(R); actividad(R, bs, multiDay); calor(R); personas(R, bs, multiDay); objetos(R); misc(R);
+    }
+
+    // ---------- indicadores
+    function kpis(R) {
+      const box = $('#kpis'); box.innerHTML = '';
+      const add = (v, l, s) => { const d = document.createElement('div'); d.className = 'kpi';
+        d.innerHTML = `<div class="v">${esc(v)}</div><div class="l">${esc(l)}</div>${s ? `<div class="s">${esc(s)}</div>` : ''}`; box.appendChild(d); };
+      const sinConteo = R.total - (R.por_tipo.people_count || 0);
+      add(fmt(sinConteo), 'Eventos', `${fmt(R.total)} con cambios de conteo`);
+      add(R.hora_pico ? `${R.hora_pico.hora.slice(11)}` : '—', 'Hora pico',
+          R.hora_pico ? `${lblDay(R.hora_pico.hora)} · ${fmt(R.hora_pico.n)} eventos` : 'sin actividad');
+      add(fmt(R.max_personas), 'Máx. personas a la vez', 'según el Hailo o los rostros');
+      add(`${fmt(R.cruces_bajan)} / ${fmt(R.cruces_suben)}`, 'Cruces de línea', 'hacia abajo / hacia arriba');
+      add(fmt(R.por_tipo.object || 0), 'Objetos detectados', R.objetos[0] ? `más frecuente: ${R.objetos[0].etiqueta}` : '—');
+      const desc = (R.rostros.find(x => x.etiqueta === 'Desconocido') || { n: 0 }).n;
+      add(fmt(desc), 'Rostros desconocidos', `${fmt(R.por_tipo.face || 0)} rostros en total`);
+      add(`${R.pct_revisado}%`, 'Revisado', `${fmt(R.revisados)} de ${fmt(R.total)} eventos`);
+    }
+
+    // ---------- actividad: barras apiladas por tipo
+    function actividad(R, bs, multiDay) {
+      const box = $('#act-chart'); box.innerHTML = '';
+      $('#act-sub').textContent = `Eventos por ${R.bucket === 'hour' ? 'hora' : 'día'}, por tipo`;
+      const leg = $('#act-legend'); leg.innerHTML = '';
+      TYPES.forEach(t => { const s = document.createElement('span');
+        s.innerHTML = `<i class="sw" style="background:${color(t.k)}"></i>${t.n}`; leg.appendChild(s); });
+      const val = {}; R.serie.forEach(x => { (val[x.t] = val[x.t] || {})[x.tipo] = x.n; });
+      const tot = bs.map(b => TYPES.reduce((s, t) => s + ((val[b] || {})[t.k] || 0), 0));
+      const max = Math.max(1, ...tot);
+      if (!tot.some(Boolean)) { box.innerHTML = '<p class="empty">Sin eventos en este periodo.</p>'; $('#t-actividad').innerHTML = ''; return; }
+      const W = 1000, H = 260, L = 44, B = 26, T = 8, iw = W - L - 8, ih = H - B - T;
+      const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Eventos por periodo y tipo' }, box);
+      const step = niceStep(max), top = Math.ceil(max / step) * step;
+      for (let v = 0; v <= top; v += step) {
+        const y = T + ih - ih * v / top;
+        svgEl('line', { x1: L, x2: W - 8, y1: y, y2: y, stroke: css('--grid') }, svg);
+        svgEl('text', { x: L - 6, y: y + 4, 'text-anchor': 'end' }, svg).textContent = fmt(v);
+      }
+      const bw = iw / bs.length, gap = Math.min(4, bw * 0.25);
+      const every = Math.ceil(bs.length / 12);
+      bs.forEach((b, i) => {
+        const x = L + i * bw + gap / 2, w = Math.max(1, bw - gap);
+        let y = T + ih;
+        const segs = TYPES.map(t => ({ t, n: (val[b] || {})[t.k] || 0 })).filter(s => s.n);
+        segs.forEach((s, j) => {
+          const h = ih * s.n / top;
+          const isTop = j === segs.length - 1;
+          const gapPx = j > 0 ? 2 : 0;   // 2 px de separación entre segmentos
+          const r = svgEl(isTop ? 'path' : 'rect', isTop
+            ? { d: roundedTop(x, y - h, w, h - gapPx, Math.min(4, w / 2)), fill: color(s.t.k) }
+            : { x, y: y - h, width: w, height: Math.max(0, h - gapPx), fill: color(s.t.k) }, svg);
+          y -= h;
+        });
+        const hit = svgEl('rect', { x: L + i * bw, y: T, width: bw, height: ih, fill: 'transparent' }, svg);
+        const lines = segs.slice().reverse().map(s => `<span class="sw" style="background:${color(s.t.k)}"></span> ${s.t.n}: <b>${fmt(s.n)}</b>`);
+        hover(hit, `<div><b>${esc(lblBucket(b, R.bucket, multiDay))}</b> · ${fmt(tot[i])} eventos</div>${lines.join('<br>') || 'Sin eventos'}`);
+        if (i % every === 0)
+          svgEl('text', { x: L + i * bw + bw / 2, y: H - 8, 'text-anchor': 'middle' }, svg).textContent = lblBucket(b, R.bucket, multiDay);
+      });
+      svgEl('line', { x1: L, x2: W - 8, y1: T + ih, y2: T + ih, stroke: css('--axis') }, svg);
+      // tabla
+      const rows = bs.map((b, i) => `<tr><td>${esc(lblBucket(b, R.bucket, multiDay))}</td>${TYPES.map(t => `<td class="n">${fmt((val[b] || {})[t.k] || 0)}</td>`).join('')}<td class="n"><b>${fmt(tot[i])}</b></td></tr>`);
+      $('#t-actividad').innerHTML = `<table><thead><tr><th>Periodo</th>${TYPES.map(t => `<th class="n">${t.n}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+    }
+    function roundedTop(x, y, w, h, r) {
+      if (h <= 0) return '';
+      r = Math.min(r, h);
+      return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+    }
+    function niceStep(max) {
+      const raw = max / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+      const n = raw / mag; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag || 1;
+    }
+
+    // ---------- mapa de calor (secuencial, un solo tono azul)
+    const RAMP = ['#0d366b', '#104281', '#184f95', '#1c5cab', '#256abf', '#2a78d6', '#3987e5', '#5598e7', '#6da7ec', '#86b6ef', '#9ec5f4', '#b7d3f6'];
+    function calor(R) {
+      const box = $('#heat-chart'); box.innerHTML = '';
+      const m = {}; let max = 0;
+      R.calor.forEach(c => { m[`${c.dow}-${c.hora}`] = c.n; max = Math.max(max, c.n); });
+      if (!max) { box.innerHTML = '<p class="empty">Sin eventos en este periodo.</p>'; $('#t-calor').innerHTML = ''; return; }
+      const order = [1, 2, 3, 4, 5, 6, 0];   // lunes primero
+      const W = 560, L = 34, T = 4, cw = (W - L - 4) / 24, ch = 22, H = T + ch * 7 + 22;
+      const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Eventos por día y hora' }, box);
+      order.forEach((dw, r) => {
+        svgEl('text', { x: L - 6, y: T + r * ch + ch / 2 + 4, 'text-anchor': 'end' }, svg).textContent = DIAS[dw];
+        for (let h = 0; h < 24; h++) {
+          const n = m[`${dw}-${h}`] || 0;
+          const fill = n ? RAMP[Math.min(RAMP.length - 1, Math.floor((RAMP.length - 1) * Math.sqrt(n / max)))] : css('--surface-2');
+          const c = svgEl('rect', { x: L + h * cw + 1, y: T + r * ch + 1, width: cw - 2, height: ch - 2, rx: 3, fill }, svg);
+          hover(c, `<b>${DIAS[dw]} ${pad(h)}:00–${pad(h)}:59</b><br>${fmt(n)} eventos`);
+        }
+      });
+      [0, 6, 12, 18, 23].forEach(h => svgEl('text', { x: L + h * cw + cw / 2, y: H - 6, 'text-anchor': 'middle' }, svg).textContent = `${h}h`);
+      // escala
+      const sc = document.createElement('div'); sc.className = 'note';
+      sc.innerHTML = `Menos <span style="display:inline-flex;vertical-align:middle;margin:0 6px">${RAMP.filter((_, i) => i % 2 === 0).map(c => `<i class="sw" style="background:${c};border-radius:0"></i>`).join('')}</span> Más (máximo ${fmt(max)} por celda)`;
+      box.appendChild(sc);
+      const rows = order.map(dw => `<tr><td>${DIAS[dw]}</td>${Array.from({ length: 24 }, (_, h) => `<td class="n">${m[`${dw}-${h}`] || ''}</td>`).join('')}</tr>`);
+      $('#t-calor').innerHTML = `<table><thead><tr><th></th>${Array.from({ length: 24 }, (_, h) => `<th class="n">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+    }
+
+    // ---------- personas: máximo por periodo (barras de un solo color)
+    function personas(R, bs, multiDay) {
+      const box = $('#ppl-chart'); box.innerHTML = '';
+      $('#ppl-sub').textContent = `Máximo de personas a la vez, por ${R.bucket === 'hour' ? 'hora' : 'día'}`;
+      const m = {}; R.personas.forEach(p => m[p.t] = p.max);
+      const vals = bs.map(b => m[b] || 0), max = Math.max(...vals);
+      if (!max) { box.innerHTML = '<p class="empty">No se registraron personas en este periodo.</p>'; return; }
+      const W = 560, H = 200, L = 30, B = 24, T = 8, iw = W - L - 6, ih = H - B - T, top = Math.max(max, 1);
+      const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Máximo de personas por periodo' }, box);
+      for (let v = 0; v <= top; v += Math.max(1, Math.ceil(top / 4))) {
+        const y = T + ih - ih * v / top;
+        svgEl('line', { x1: L, x2: W - 6, y1: y, y2: y, stroke: css('--grid') }, svg);
+        svgEl('text', { x: L - 6, y: y + 4, 'text-anchor': 'end' }, svg).textContent = v;
+      }
+      const bw = iw / bs.length, gap = Math.min(4, bw * 0.25), every = Math.ceil(bs.length / 8);
+      bs.forEach((b, i) => {
+        const v = vals[i], h = ih * v / top, x = L + i * bw + gap / 2, w = Math.max(1, bw - gap);
+        if (v) svgEl('path', { d: roundedTop(x, T + ih - h, w, h, Math.min(4, w / 2)), fill: css('--accent') }, svg);
+        const hit = svgEl('rect', { x: L + i * bw, y: T, width: bw, height: ih, fill: 'transparent' }, svg);
+        hover(hit, `<b>${esc(lblBucket(b, R.bucket, multiDay))}</b><br>Máximo: <b>${v}</b> persona(s)`);
+        if (i % every === 0) svgEl('text', { x: L + i * bw + bw / 2, y: H - 6, 'text-anchor': 'middle' }, svg).textContent = lblBucket(b, R.bucket, multiDay);
+      });
+      svgEl('line', { x1: L, x2: W - 6, y1: T + ih, y2: T + ih, stroke: css('--axis') }, svg);
+    }
+
+    // ---------- objetos: barras horizontales
+    function objetos(R) {
+      const box = $('#obj-chart'); box.innerHTML = '';
+      if (!R.objetos.length) { box.innerHTML = '<p class="empty">Sin objetos detectados en este periodo.</p>'; return; }
+      const max = Math.max(...R.objetos.map(o => o.n));
+      const W = 560, rowH = 30, L = 110, H = R.objetos.length * rowH + 4;
+      const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Objetos por clase' }, box);
+      R.objetos.forEach((o, i) => {
+        const y = 2 + i * rowH, w = Math.max(2, (W - L - 120) * o.n / max);
+        svgEl('text', { x: L - 8, y: y + rowH / 2 + 4, 'text-anchor': 'end', style: 'fill:var(--ink-2);font-size:12px' }, svg).textContent = o.etiqueta;
+        const r = svgEl('path', { d: roundedRight(L, y + 6, w, rowH - 12, 4), fill: color('object') }, svg);
+        const t = svgEl('text', { x: L + w + 8, y: y + rowH / 2 + 4, class: 'val' }, svg);
+        t.textContent = `${fmt(o.n)} · conf. ${Math.round(o.conf_media * 100)}%`;
+        hover(r, `<b>${esc(o.etiqueta)}</b><br>${fmt(o.n)} eventos · confianza media ${Math.round(o.conf_media * 100)}%`);
+      });
+    }
+    function roundedRight(x, y, w, h, r) {
+      r = Math.min(r, w, h / 2);
+      return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
+    }
+
+    // ---------- rostros, gestos y cruces (tablas)
+    function misc(R) {
+      const t = (title, rows, empty) => rows.length
+        ? `<h3 style="font-size:.85rem;color:var(--ink-2);margin:6px 0 2px">${title}</h3><table><tbody>${rows.map(r => `<tr><td>${esc(r[0])}</td><td class="n">${fmt(r[1])}</td></tr>`).join('')}</tbody></table>`
+        : `<h3 style="font-size:.85rem;color:var(--ink-2);margin:6px 0 2px">${title}</h3><p class="note">${empty}</p>`;
+      $('#misc').innerHTML =
+        t('Rostros', R.rostros.map(r => [r.etiqueta, r.n]), 'Sin rostros en este periodo.') +
+        t('Gestos', R.gestos.map(g => [g.etiqueta.replace('_', ' '), g.n]), 'Sin gestos en este periodo.') +
+        t('Cruces de línea', [['Hacia abajo', R.cruces_bajan], ['Hacia arriba', R.cruces_suben]].filter(x => x[1]), 'Sin cruces en este periodo.');
+    }
+
+    load();
+  </script>
+{% endblock %}

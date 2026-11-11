@@ -49,10 +49,10 @@ def send_notification_if_gesture(image_path):
         to_email = config.get("email_to", "").strip()
         if to_email:
             email_config = {
-                "EMAIL_SERVER": "smtp.gmail.com",
-                "EMAIL_PORT": 465,
-                "EMAIL_FROM": "pivision.alerts@gmail.com",
-                "EMAIL_PASSWORD": "gkja ntyb gono aynv"  # ⚠️ ya integrada
+                "EMAIL_SERVER": os.getenv("EMAIL_SERVER", "smtp.gmail.com"),
+                "EMAIL_PORT": int(os.getenv("EMAIL_PORT", 465)),
+                "EMAIL_FROM": os.getenv("EMAIL_FROM", ""),
+                "EMAIL_PASSWORD": os.getenv("EMAIL_PASSWORD", "")
             }
             send_email_alert(subject, body, image_data, to_email, email_config)
         else:
@@ -60,7 +60,7 @@ def send_notification_if_gesture(image_path):
 
     # 📲 Enviar Telegram
     if config.get("telegram_enabled", False):
-        token   = "7758206368:AAG77jBM8dLjLPfy14ZsOxeUBgdbAsQMYhU"
+        token   = os.getenv("TELEGRAM_BOT_TOKEN", "")
         chat_id = config.get("telegram_chat_id", "").strip()
         if chat_id:
             send_telegram_alert(token, chat_id, subject, image_path)

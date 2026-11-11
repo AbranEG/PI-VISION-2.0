@@ -8,7 +8,7 @@ import json
 from flask import (
     Blueprint, render_template, Response,
     stream_with_context, current_app, jsonify,
-    request, flash
+    request, flash, send_file, abort
 )
 
 # 🔐 Importar decorador de autenticación
@@ -84,12 +84,18 @@ def video_feed(camera_id):
 def gen_mjpeg(camera_id: int):
     """Generador MJPEG usando el CameraManager del servidor."""
     cam = current_app.camera_manager.get_camera(camera_id)
+    if cam is None:
+        return
 
-    if not getattr(cam, 'running', False):
-        cam.start()
+    # Si el usuario la apagó, abrir el video no la vuelve a encender
+    if not cam.running and not cam.apagada:
+        try:
+            cam.start()
+        except RuntimeError:
+            return
         time.sleep(0.1)
 
-    while True:
+    while cam.running:                     # al apagarla, el video termina
         frame = cam.read_frame()
         if frame is None:
             time.sleep(0.01)
@@ -115,7 +121,11 @@ def gen_mjpeg(camera_id: int):
 def snapshot(camera_id):
     """Devuelve una única imagen JPEG capturada en el momento."""
     cam = current_app.camera_manager.get_camera(camera_id)
-    if not getattr(cam, 'running', False):
+    if cam is None:
+        abort(404)
+    if cam.apagada:
+        return "La cámara está apagada", 409
+    if not cam.running:
         cam.start()
         time.sleep(0.1)
 
@@ -151,24 +161,81 @@ def metrics():
 @dashboard_bp.route('/events/<int:camera_id>')
 @login_required
 def stream_events(camera_id):
-    """Stream de eventos IA (rostros, movimiento, gestos, conteo) vía SSE."""
+    """
+    Stream de eventos IA (rostros, movimiento, gestos, conteo, cruces) vía SSE.
+    Lee del EventStore por id: cada pestaña lleva su propio cursor y ninguna
+    le quita eventos a otra (hallazgo 5). Al reconectar, el navegador envía
+    Last-Event-ID y se reanuda donde se quedó.
+    """
+    from app.system_monitor import get_system_metrics
+    store = current_app.event_store
+    try:
+        last_id = int(request.headers.get('Last-Event-ID', 0))
+    except ValueError:
+        last_id = 0
+    if last_id == 0:
+        last_id = max(0, store.last_id - 20)   # al abrir, muestra los últimos eventos
 
-    def event_stream():
-        with current_app.app_context():
-            cam = current_app.camera_manager.get_camera(camera_id)
+    def event_stream(last_id):
+        while True:
+            try:
+                events = store.recent(since_id=last_id, camera_id=camera_id)
+                if events:
+                    last_id = events[-1]['id']
+                payload = list(events) + [get_system_metrics()]
+                yield f"id: {last_id}\ndata: {json.dumps(payload, default=str)}\n\n"
+            except Exception as e:
+                print(f"[ERROR SSE CAM {camera_id}]: {e}")
+                yield "data: []\n\n"
+            time.sleep(1)
 
-            if not cam or not getattr(cam, 'running', False):
-                return
+    return Response(stream_with_context(event_stream(last_id)), mimetype='text/event-stream')
 
-            while True:
-                try:
-                    pipeline = cam.get_pipeline()
-                    events = pipeline.get_last_events() if pipeline else []
-                    print(f"[EVENTOS CAM {camera_id}]: {events}")  # DEBUG
-                    yield f"data: {json.dumps(events)}\n\n"
-                except Exception as e:
-                    print(f"[ERROR SSE CAM {camera_id}]: {e}")
-                    yield "data: []\n\n"
-                time.sleep(1)
 
-    return Response(stream_with_context(event_stream()), mimetype='text/event-stream')
+# -----------------------------------------------------------------------------
+# Fase 2: análisis y gestión de eventos
+# -----------------------------------------------------------------------------
+
+@dashboard_bp.route('/eventos')
+@login_required
+def eventos():
+    """Página de consulta, revisión y notas de eventos guardados."""
+    cam_ids = current_app.camera_manager.device_ids
+    return render_template('eventos.html', camera_ids=cam_ids)
+
+
+@dashboard_bp.route('/event_image/<int:event_id>')
+@login_required
+def event_image(event_id):
+    """Foto de un evento (solo archivos dentro de sessions/)."""
+    store = current_app.event_store
+    ev = store.get(event_id)
+    path = store.image_file(ev.get('image_path')) if ev else None
+    if not path:
+        abort(404)
+    return send_file(path, mimetype='image/jpeg', max_age=3600)
+
+
+# -----------------------------------------------------------------------------
+# Fase 4: reportes y estadísticas
+# -----------------------------------------------------------------------------
+
+@dashboard_bp.route('/reportes')
+@login_required
+def reportes():
+    """Reportes por periodo: actividad, mapa de calor, objetos, personas, cruces; exporta CSV e imprime."""
+    cam_ids = current_app.camera_manager.device_ids
+    return render_template('reportes.html', camera_ids=cam_ids)
+
+
+@dashboard_bp.route('/event_file')
+@login_required
+def event_file():
+    """
+    Foto de un evento por su ruta (los eventos en vivo aún no tienen el id de la BD).
+    Solo sirve archivos dentro de sessions/ (EventStore.image_file valida la ruta).
+    """
+    path = current_app.event_store.image_file(request.args.get('p', ''))
+    if not path:
+        abort(404)
+    return send_file(path, mimetype='image/jpeg', max_age=3600)

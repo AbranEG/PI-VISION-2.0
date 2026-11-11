@@ -1,4 +1,5 @@
 import os
+import atexit
 from pathlib import Path
 from flask import Flask, render_template, redirect, url_for, session
 from app.multi_camera_manager import MultiCameraManager
@@ -14,7 +15,7 @@ def create_app():
     )
 
     # 🔐 Clave secreta para sesiones
-    app.secret_key = "clave_super_secreta_123"  # cambia por una clave segura y privada
+    app.secret_key = os.getenv("SECRET_KEY", "cambia-esta-clave")
 
     # 2) Configuración
     base_dir    = Path(__file__).resolve().parent.parent
@@ -33,6 +34,13 @@ def create_app():
         app.logger.error(f"Ningún ID configurado {configured} está disponible. Cámaras detectadas: {detected}")
     else:
         app.logger.info(f"Inicializando sólo cámaras válidas: {device_ids}")
+
+    # 3b) Capa de persistencia de eventos (Fase 1): se crea antes que las cámaras
+    from app.event_store import get_store
+    store = get_store()
+    app.event_store = store
+    if store.migrated:
+        app.logger.info(f"Eventos heredados migrados a la tabla events: {store.migrated}")
 
     # 4) Instanciar MultiCameraManager
     manager = MultiCameraManager(device_ids=device_ids)
@@ -59,9 +67,12 @@ def create_app():
     app.register_blueprint(notifications_bp)
     app.register_blueprint(api_bp)
     
-    # 7) Liberar recursos al cerrar
-    @app.teardown_appcontext
-    def shutdown_manager(exc=None):
-        app.camera_manager.stop_all()
+    # 7) Liberar recursos al cerrar el proceso.
+    #    Antes se usaba @app.teardown_appcontext, que Flask ejecuta al terminar CADA petición:
+    #    detenía las cámaras con cada request (hallazgo 2).
+    def _shutdown():
+        manager.stop_all()
+        store.close()
+    atexit.register(_shutdown)
 
     return app

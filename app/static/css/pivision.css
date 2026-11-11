@@ -1,0 +1,181 @@
+/* =============================================================================
+   PiVision IA — sistema de diseño (tema oscuro profesional)
+   Base de color: azul institucional TecNM, Pantone 294 C (#1B396A), y grises fríos
+   (Cool Gray 10 C). Fuente: Manual de Identidad Gráfica TecNM 2025.
+   Contrastes verificados: texto 14.6:1, texto secundario 9.1:1, texto tenue 5.8:1,
+   botón principal 6.2:1. Colores de evento validados para daltonismo y contraste
+   sobre la superficie (#111a2e).
+   ============================================================================= */
+:root {
+  color-scheme: dark;
+  /* Marca (TecNM) */
+  --tecnm-azul: #1B396A;          /* Pantone 294 C */
+  --tecnm-gris: #807E82;          /* Cool Gray 10 C */
+  --brand: #2f5fae;               /* azul TecNM aclarado para botones sobre fondo oscuro */
+  --brand-hover: #3a6dc0;
+  --brand-ink: #8fb4f0;           /* azul para texto/enlaces sobre fondo oscuro */
+  --brand-soft: rgba(47, 95, 174, .16);
+
+  /* Superficies */
+  --page: #0b1220;
+  --surface: #111a2e;
+  --surface-2: #17223a;
+  --surface-3: #1e2b47;
+  --border: #26324d;
+  --border-strong: #34446a;
+
+  /* Texto */
+  --ink: #e8ecf3;
+  --ink-2: #b3bccd;
+  --ink-3: #8b96ad;
+
+  /* Gráficas */
+  --grid: #1f2a42;
+  --axis: #3a4866;
+
+  /* Estado (con ícono y texto, nunca solo color) */
+  --ok: #2fbf71;
+  --warn: #fab219;
+  --bad: #e5484d;
+
+  /* Identidad por tipo de evento — mismo color en todas las páginas */
+  --t-motion: #3987e5;
+  --t-face: #d95926;
+  --t-gesture: #199e70;
+  --t-line_cross: #c98500;
+  --t-object: #d55181;
+  --t-people_count: #9085e9;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 6px 24px rgba(0, 0, 0, .35);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0 }
+html { -webkit-text-size-adjust: 100% }
+body { background: var(--page); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45;
+       min-height: 100vh; display: flex; flex-direction: column }
+a { color: var(--brand-ink); text-decoration: none }
+a:hover { text-decoration: underline }
+img { max-width: 100% }
+:focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 2px; border-radius: 4px }
+.tabnum { font-variant-numeric: tabular-nums }
+.hidden { display: none !important }
+.muted { color: var(--ink-3) }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+
+/* ---------------------------------------------------------------- barra superior */
+.topbar { position: sticky; top: 0; z-index: 50; background: linear-gradient(180deg, #13254a 0%, #0f1d3a 100%);
+          border-bottom: 1px solid var(--border); box-shadow: 0 1px 0 rgba(255,255,255,.03) }
+.topbar::before { content: ""; display: block; height: 3px; background: var(--tecnm-azul);
+                  border-bottom: 1px solid #2a4f8f }
+.topbar .inner { max-width: 1440px; margin: 0 auto; padding: 0 20px; height: 58px; display: flex; align-items: center; gap: 20px }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 700; font-size: 1.05rem;
+         letter-spacing: .2px; white-space: nowrap }
+.brand:hover { text-decoration: none }
+.brand svg { flex: none }
+.brand small { display: block; font-weight: 500; font-size: .7rem; color: var(--ink-3); letter-spacing: .4px; margin-top: -2px }
+.nav { display: flex; gap: 4px; align-items: center; flex: 1; overflow-x: auto; scrollbar-width: none }
+.nav::-webkit-scrollbar { display: none }
+.nav a { color: var(--ink-2); padding: 8px 12px; border-radius: var(--radius-sm); font-size: .92rem; font-weight: 500;
+         display: inline-flex; align-items: center; gap: 7px; white-space: nowrap }
+.nav a:hover { background: rgba(255,255,255,.05); color: var(--ink); text-decoration: none }
+.nav a.active { background: var(--brand-soft); color: var(--ink); box-shadow: inset 0 -2px 0 var(--brand-ink) }
+.nav svg { width: 16px; height: 16px; flex: none }
+.topbar .right { display: flex; align-items: center; gap: 12px; white-space: nowrap }
+.user { color: var(--ink-2); font-size: .88rem; display: inline-flex; align-items: center; gap: 6px }
+
+/* Píldora de estado (Hailo, cámara…) */
+.pill { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 999px; font-size: .8rem;
+        background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-2); white-space: nowrap }
+.pill .led { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); flex: none }
+.pill.ok .led { background: var(--ok); box-shadow: 0 0 0 3px rgba(47,191,113,.18) }
+.pill.warn .led { background: var(--warn) }
+.pill.bad .led { background: var(--bad) }
+.pill.live .led { background: var(--bad); animation: pulso 1.6s infinite }
+@keyframes pulso { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+@media (prefers-reduced-motion: reduce) { .pill.live .led { animation: none } }
+
+/* ---------------------------------------------------------------- estructura */
+main.container { width: 100%; max-width: 1440px; margin: 0 auto; padding: 22px 20px 32px; flex: 1 }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px }
+.page-head h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.2px }
+.page-head p { color: var(--ink-3); font-size: .9rem; margin-top: 2px }
+.footer { border-top: 1px solid var(--border); color: var(--ink-3); font-size: .78rem }
+.footer .inner { max-width: 1440px; margin: 0 auto; padding: 12px 20px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; min-width: 0 }
+.panel + .panel { margin-top: 16px }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap }
+.panel-head h2 { font-size: 1rem; font-weight: 650; display: flex; align-items: center; gap: 8px }
+.panel-head .sub { color: var(--ink-3); font-size: .82rem }
+
+/* ---------------------------------------------------------------- controles */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 14px; border-radius: var(--radius-sm);
+       border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--ink); font: inherit; font-size: .9rem;
+       font-weight: 500; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background .15s, border-color .15s }
+.btn:hover { background: var(--surface-3); border-color: #45577f; text-decoration: none }
+.btn:disabled { opacity: .45; cursor: default }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600 }
+.btn.primary:hover { background: var(--brand-hover) }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--ink-2) }
+.btn.ghost:hover { background: rgba(255,255,255,.05); color: var(--ink) }
+.btn.sm { padding: 5px 10px; font-size: .84rem }
+.btn.on { background: var(--brand-soft); border-color: var(--brand-ink); color: var(--ink) }
+.btn svg { width: 16px; height: 16px; flex: none }
+
+.field { display: flex; flex-direction: column; gap: 5px; font-size: .8rem; color: var(--ink-3); font-weight: 500 }
+input:not([type]), input[type=text], input[type=password], input[type=email], input[type=number], input[type=date],
+input[type=datetime-local], select, textarea {
+  background: var(--page); color: var(--ink); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  padding: 8px 10px; font: inherit; font-size: .92rem; width: 100%; color-scheme: dark }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand-ink); box-shadow: 0 0 0 3px var(--brand-soft) }
+
+.flash { padding: 10px 12px; border-radius: var(--radius-sm); font-size: .9rem; border: 1px solid; margin-bottom: 12px }
+.flash.danger, .flash.error, .flash.warning { background: rgba(229,72,77,.1); border-color: rgba(229,72,77,.4); color: #ffb4b6 }
+.flash.success { background: rgba(47,191,113,.1); border-color: rgba(47,191,113,.4); color: #9be3bc }
+.flash.info, .flash.message { background: var(--brand-soft); border-color: var(--border-strong); color: var(--ink-2) }
+
+/* Punto de color por tipo de evento */
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; background: var(--ink-3) }
+.dot.motion { background: var(--t-motion) } .dot.face { background: var(--t-face) } .dot.gesture { background: var(--t-gesture) }
+.dot.line_cross { background: var(--t-line_cross) } .dot.object { background: var(--t-object) } .dot.people_count { background: var(--t-people_count) }
+
+/* Indicadores */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px }
+.kpi .v { font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15 }
+.kpi .l { color: var(--ink-2); font-size: .85rem; margin-top: 2px }
+.kpi .s { color: var(--ink-3); font-size: .78rem; margin-top: 2px }
+
+/* Barra de nivel (CPU, RAM…) */
+.meter { height: 6px; background: var(--surface-3); border-radius: 999px; overflow: hidden }
+.meter > i { display: block; height: 100%; width: 0; background: var(--brand-ink); border-radius: 999px; transition: width .4s }
+.meter.warn > i { background: var(--warn) } .meter.bad > i { background: var(--bad) }
+
+/* Aviso flotante */
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 200; background: var(--surface-3); color: var(--ink);
+         border: 1px solid var(--border-strong); border-left: 4px solid var(--ok); border-radius: var(--radius-sm);
+         padding: 12px 16px; box-shadow: var(--shadow); font-size: .9rem; max-width: 360px; display: none }
+.toast.show { display: block; animation: entra .2s ease-out }
+@keyframes entra { from { transform: translateY(8px); opacity: 0 } to { transform: none; opacity: 1 } }
+
+/* ---------------------------------------------------------------- responsivo */
+@media (max-width: 900px) {
+  .topbar .inner { height: auto; flex-wrap: wrap; padding: 8px 16px; gap: 8px 14px }
+  .nav { order: 3; flex-basis: 100%; padding-bottom: 4px }
+  .brand small { display: none }
+  main.container { padding: 16px }
+}
+@media (max-width: 520px) { .user span.name { display: none } }
+
+/* ---------------------------------------------------------------- impresión */
+@media print {
+  :root { --page: #fff; --surface: #fff; --surface-2: #fff; --surface-3: #f2f2f2; --border: #ccc; --border-strong: #bbb;
+          --ink: #000; --ink-2: #333; --ink-3: #555; --grid: #ddd; --axis: #999; color-scheme: light }
+  .topbar, .footer, .no-print { display: none !important }
+  main.container { padding: 0; max-width: none }
+  .panel, .kpi { break-inside: avoid; box-shadow: none }
+}

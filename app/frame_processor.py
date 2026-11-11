@@ -10,12 +10,29 @@ class FrameProcessor:
     def __init__(self, threshold: float = 0.6):
         # Para detección de movimiento
         self.previous_frame = None
+        self.threshold = threshold
+        # Hallazgo 10: el pipeline solo usa detect_motion(); el encoder, el matcher y la BD
+        # se crean únicamente si alguien llama a process() (antes: un intérprete TFLite
+        # extra por cámara que nunca se usaba).
+        self._encoder = self._matcher = self._db = None
 
-        # Inicialización de DB, encoder y matcher
-        db = Database()
-        self.encoder = FaceEncoder()
-        self.matcher = FaceMatcher(db, threshold=threshold)
-        self.db = db
+    @property
+    def encoder(self):
+        if self._encoder is None:
+            self._encoder = FaceEncoder()
+        return self._encoder
+
+    @property
+    def db(self):
+        if self._db is None:
+            self._db = Database()
+        return self._db
+
+    @property
+    def matcher(self):
+        if self._matcher is None:
+            self._matcher = FaceMatcher(self.db, threshold=self.threshold)
+        return self._matcher
 
     def preprocess(self, frame, blur_type="gaussian", kernel_size=(5, 5)):
         """

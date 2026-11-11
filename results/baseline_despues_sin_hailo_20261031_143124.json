@@ -1,0 +1,248 @@
+{
+  "meta": {
+    "label": "despues_sin_hailo",
+    "escena": "1 persona sentada frente a cámara",
+    "fecha": "2026-10-31T14:30:07",
+    "code_dir": "/home/pi/PiVision-IA",
+    "git_commit": "7b85e78",
+    "git_describe": "v1.0-baseline-dirty",
+    "git_cambios_sin_commit": [
+      "M app/__init__.py",
+      " M app/ai_engine.py",
+      " M app/camera_manager.py",
+      " M app/frame_processor.py",
+      " M app/gesture_handler.py",
+      " M app/routes/api.py",
+      " M app/routes/auth.py",
+      " M app/routes/dashboard.py",
+      " M app/system_monitor.py",
+      " M app/templates/index.html",
+      " M config/notifications.json",
+      " M config/settings.py",
+      " M face_matcher.py",
+      " M init_users.py",
+      " M server.py",
+      " M tests/get_chat_id.py",
+      " M tests/test_telegram.py",
+      " M utils/notifier.py"
+    ],
+    "camaras": [
+      "0"
+    ],
+    "resolucion_pipeline": "640x480",
+    "duracion_s": 60,
+    "warmup_s": 10,
+    "env": {
+      "USE_TPU": "false",
+      "DETECTION_FRAME_SKIP": "2",
+      "FACE_MATCH_THRESHOLD": "0.45",
+      "GESTURE_DETECTION_CONFIDENCE": "0.7"
+    },
+    "sistema": {
+      "modelo_pi": "Raspberry Pi 5 Model B Rev 1.1",
+      "os": "Debian GNU/Linux 13 (trixie)",
+      "kernel": "6.18.50+rpt-rpi-2712",
+      "python": "3.11.16",
+      "nucleos": 4,
+      "ram_total_mb": 8058,
+      "hailo_dev": true,
+      "throttled_inicio": "throttled=0x0"
+    },
+    "paquetes": {
+      "opencv-contrib-python": "4.11.0.86",
+      "opencv-python": null,
+      "mediapipe": "0.10.18",
+      "numpy": "1.26.4",
+      "tflite-runtime": "2.14.0",
+      "ai-edge-litert": null,
+      "flask": "3.1.1"
+    },
+    "modelo_mobilefacenet_sha256": "be4bc7cfc53f7bc336d0f28b1ab92535f618c913a422b683210750f6b5354854"
+  },
+  "fps_camara_sin_ia": {
+    "0": {
+      "fps": 12.6,
+      "frame": "640x480"
+    }
+  },
+  "fps_pipeline_por_camara": {
+    "0": 10.15
+  },
+  "fps_pipeline_total": 10.15,
+  "etapas": {
+    "movimiento": {
+      "n": 609,
+      "media_ms": 0.77,
+      "p50_ms": 0.74,
+      "p95_ms": 0.97,
+      "max_ms": 1.54,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 0.8
+    },
+    "malla_facial": {
+      "n": 609,
+      "media_ms": 4.83,
+      "p50_ms": 9.21,
+      "p95_ms": 10.01,
+      "max_ms": 11.19,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 4.9
+    },
+    "normalizacion": {
+      "n": 54,
+      "media_ms": 4.23,
+      "p50_ms": 4.2,
+      "p95_ms": 4.58,
+      "max_ms": 5.33,
+      "llamadas_por_frame": 0.09,
+      "pct_tiempo_pipeline": 0.4
+    },
+    "embedding": {
+      "n": 54,
+      "media_ms": 21.18,
+      "p50_ms": 20.99,
+      "p95_ms": 21.58,
+      "max_ms": 26.77,
+      "llamadas_por_frame": 0.09,
+      "pct_tiempo_pipeline": 1.9
+    },
+    "comparacion": {
+      "n": 54,
+      "media_ms": 0.04,
+      "p50_ms": 0.0,
+      "p95_ms": 0.41,
+      "max_ms": 0.49,
+      "llamadas_por_frame": 0.09,
+      "pct_tiempo_pipeline": 0.0
+    },
+    "gestos": {
+      "n": 609,
+      "media_ms": 90.12,
+      "p50_ms": 90.24,
+      "p95_ms": 92.85,
+      "max_ms": 103.67,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 91.6
+    },
+    "tracking": {
+      "n": 609,
+      "media_ms": 0.11,
+      "p50_ms": 0.11,
+      "p95_ms": 0.12,
+      "max_ms": 0.44,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 0.1
+    },
+    "objetos_hailo": {
+      "n": 0,
+      "llamadas_por_frame": 0.0,
+      "pct_tiempo_pipeline": 0.0
+    },
+    "mp_facemesh_inferencia": {
+      "n": 305,
+      "media_ms": 9.05,
+      "p50_ms": 8.98,
+      "p95_ms": 9.58,
+      "max_ms": 10.51,
+      "llamadas_por_frame": 0.5,
+      "pct_tiempo_pipeline": 4.6
+    },
+    "mp_holistic_inferencia": {
+      "n": 609,
+      "media_ms": 89.79,
+      "p50_ms": 89.94,
+      "p95_ms": 92.52,
+      "max_ms": 103.35,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 91.3
+    },
+    "pipeline_total": {
+      "n": 609,
+      "media_ms": 98.4,
+      "p50_ms": 94.11,
+      "p95_ms": 126.06,
+      "max_ms": 142.94,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 100.0
+    }
+  },
+  "sistema": {
+    "cpu_total_pct": {
+      "media": 44.5,
+      "max": 51.4
+    },
+    "cpu_proceso_pct": {
+      "media": 176.2,
+      "max": 181.9
+    },
+    "rss_proceso_mb": {
+      "media": 437.5,
+      "max": 438.3
+    },
+    "ram_sistema_pct": {
+      "media": 25.4,
+      "max": 26.5
+    },
+    "temp_c": {
+      "media": 65.4,
+      "max": 68.8
+    },
+    "freq_mhz": {
+      "media": 2391.7,
+      "max": 2400.0
+    },
+    "nucleo_mas_cargado_pct": 47.7,
+    "ram_carga_modelos_mb": 30.6,
+    "throttled_fin": "throttled=0x0"
+  },
+  "contadores": {
+    "load_tflite_model_llamadas": 0,
+    "interpretes_mobilefacenet_creados": 1,
+    "facematcher_creados": 1
+  },
+  "bd": {
+    "antes": {
+      "db_path": "/home/pi/PiVision-IA/database/pivision.db",
+      "existe": true,
+      "tabla": "events",
+      "eventos_por_tipo": {
+        "face": 481,
+        "gesture": 123,
+        "line_cross": 159,
+        "motion": 967,
+        "object": 78,
+        "people_count": 364
+      },
+      "eventos_en_prueba": {},
+      "rostros_conocidos": 0
+    },
+    "despues": {
+      "db_path": "/home/pi/PiVision-IA/database/pivision.db",
+      "existe": true,
+      "tabla": "events",
+      "eventos_por_tipo": {
+        "face": 488,
+        "gesture": 123,
+        "line_cross": 159,
+        "motion": 979,
+        "object": 78,
+        "people_count": 365
+      },
+      "eventos_en_prueba": {
+        "face": 7,
+        "motion": 12,
+        "people_count": 1
+      },
+      "rostros_conocidos": 0
+    },
+    "eventos_guardados_en_prueba": {
+      "face": 7,
+      "motion": 12,
+      "people_count": 1
+    }
+  },
+  "log_pipeline": {
+    "lineas": 0,
+    "menciona_acelerador": []
+  }
+}

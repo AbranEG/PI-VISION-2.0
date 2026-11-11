@@ -1,7 +1,10 @@
 from utils.telegram_alert import send_telegram_alert
 
 # Credenciales del bot y destino
-TOKEN = "7758206368:AAG77jBM8dLjLPfy14ZsOxeUBgdbAsQMYhU"
+import os
+from dotenv import load_dotenv
+load_dotenv()
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 CHAT_ID = "7950367373"
 
 # Mensaje de prueba y ruta de imagen de ejemplo

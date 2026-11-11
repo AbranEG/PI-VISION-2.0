@@ -1,410 +1,355 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>PiVision IA – Dashboard</title>
-  <style>
-    :root {
-      --bg-dark: #111;
-      --bg-panel: #1a1a1a;
-      --bg-metrics: #222;
-      --border: #333;
-      --text: #eee;
-      --accent-motion: #ff9800;
-      --accent-face:   #ab47bc;
-      --accent-gesture:#42a5f5;
-      --accent-people: #26c6da;
-      --radius: 8px;
-      --pad: 12px;
-    }
-    * { box-sizing: border-box; margin:0; padding:0 }
-    body {
-      background: var(--bg-dark);
-      color: var(--text);
-      font-family: system-ui, Roboto, Segoe UI, sans-serif;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-    }
-    h1 { text-align: center }
+{% extends "base.html" %}
+{% block title %}En vivo{% endblock %}
+{% block head %}
+<style>
+  .live-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start }
+  .cams { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)) }
+  .cam { padding: 0; overflow: hidden }
+  .cam-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px;
+              border-bottom: 1px solid var(--border); background: var(--surface-2) }
+  .cam-head h2 { font-size: .95rem; font-weight: 650; display: flex; align-items: center; gap: 8px; white-space: nowrap }
+  .cam-head .meta { display: flex; gap: 8px; align-items: center; color: var(--ink-3); font-size: .8rem }
+  /* El video no pasa de la altura de la pantalla: así se ven también los últimos eventos */
+  .video { position: relative; aspect-ratio: 4 / 3; max-height: calc(100vh - 290px); min-height: 240px; width: 100%;
+           background: #05080f; display: flex; align-items: center; justify-content: center }
+  .video img { width: 100%; height: 100%; object-fit: contain; display: block }
+  .video .off { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column;
+                gap: 8px; color: var(--ink-3); font-size: .9rem; text-align: center; padding: 20px }
+  .video.sin-senal .off { display: flex }
+  .video.sin-senal img { visibility: hidden }
+  .video .off .apag { display: none }
+  .video.apagada .off { display: flex }
+  .video.apagada img { visibility: hidden }
+  .video.apagada .off .apag { display: block }
+  .video.apagada .off .senal { display: none }
+  .video .off b { color: var(--ink-2); font-weight: 600 }
+  .btn.power svg { width: 14px; height: 14px }
+  .btn.power.encender { background: var(--brand); border-color: var(--brand); color: #fff }
+  .btn.power.encender:hover { background: var(--brand-hover) }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 9px 14px; font-size: .78rem; color: var(--ink-3); border-top: 1px solid var(--border) }
+  .legend span { display: inline-flex; align-items: center; gap: 6px }
+  .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block }
 
-    /* GRID DE STREAMS */
-    .camera-grid {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-      width: 100%;
-      max-width: 1400px;
-    }
-    .video-stream {
-      border: 2px solid var(--border);
-      border-radius: var(--radius);
-      max-width: 100%;
-      flex: 1 1 45%;
-    }
+  .last { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px }
+  .last .item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; min-width: 0 }
+  .last .t { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--ink-3); text-transform: uppercase;
+             letter-spacing: .4px; font-weight: 600 }
+  .last .m { font-size: .92rem; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .last .h { font-size: .76rem; color: var(--ink-3); font-family: var(--mono); margin-top: 2px }
+  .last .item.flash-in { animation: brillo 1.2s ease-out }
+  @keyframes brillo { from { border-color: var(--brand-ink); background: var(--surface-2) } }
 
-    /* MÉTRICAS */
-    .metrics {
-      background: var(--bg-metrics);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      width: 100%;
-      max-width: 880px;
-      padding: var(--pad);
-    }
-    .metrics-grid {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: space-between;
-    }
-    .metric-card {
-      flex: 1 0 30%;
-      min-width: 140px;
-      background: #0004;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px;
-      text-align: center;
-    }
-    .metric-card h3 { font-size: 0.9rem; margin-bottom: 4px }
-    .metric-card span { font-size: 1.3rem; font-weight: 700 }
+  .stats { display: grid; gap: 12px }
+  .stat { display: grid; grid-template-columns: 92px 1fr 52px; align-items: center; gap: 10px; font-size: .86rem }
+  .stat .l { color: var(--ink-2) }
+  .stat .v { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink) }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: .86rem; margin-top: 14px; padding-top: 12px;
+        border-top: 1px solid var(--border) }
+  .kv dt { color: var(--ink-3) } .kv dd { text-align: right; font-variant-numeric: tabular-nums }
 
-    /* PREVISUALIZACIÓN DE EVENTOS */
-    .preview {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      width: 100%;
-      max-width: 880px;
-      padding: var(--pad);
-    }
-    .preview h2 { margin-bottom: 12px; }
-    .cards {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: space-between;
-    }
-    .card {
-      flex: 1 0 22%;
-      min-width: 160px;
-      background: #0004;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      text-align: center;
-    }
-    .card .dot {
-      width: 16px; height:16px;
-      border-radius:50%;
-      margin: 0 auto;
-    }
-    .dot.motion    { background: var(--accent-motion); }
-    .dot.face      { background: var(--accent-face); }
-    .dot.gesture   { background: var(--accent-gesture); }
-    .dot.people_count { background: var(--accent-people); }
+  .feed { list-style: none; display: grid; gap: 2px; max-height: 520px; overflow-y: auto; margin: 0 -8px; padding: 0 8px }
+  .feed li a { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: center; padding: 7px; border-radius: 8px;
+               color: inherit; text-decoration: none }
+  .feed li a:hover { background: var(--surface-2) }
+  .feed .th { width: 56px; height: 42px; border-radius: 5px; background: var(--surface-3); overflow: hidden; display: flex;
+              align-items: center; justify-content: center }
+  .feed .th img { width: 100%; height: 100%; object-fit: cover }
+  .feed .d { font-size: .87rem; line-height: 1.3; display: flex; gap: 7px; align-items: baseline; min-width: 0 }
+  .feed .d span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .feed .d .dot { transform: translateY(1px) }
+  .feed .w { font-size: .75rem; color: var(--ink-3); margin-top: 2px; padding-left: 17px }
+  .feed li.nuevo a { animation: brillo 1.4s ease-out }
+  .feed .vacio { color: var(--ink-3); font-size: .88rem; padding: 18px 4px; text-align: center }
 
-    .card .type { font-weight:700; text-transform:uppercase; }
-    .card .time { font-family: monospace; color: var(--text); font-size:0.9rem; }
-    .card .msg  { font-size:0.95rem; }
+  @media (max-width: 1100px) { .live-layout { grid-template-columns: 1fr } .cams { grid-template-columns: 1fr } }
+  @media (max-width: 520px) { .cams { grid-template-columns: 1fr } .cam-head .meta .res { display: none } }
+</style>
+{% endblock %}
 
-    /* LEYENDA */
-    .legend {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      font-size: 0.9rem;
-      margin-top: 8px;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .legend-item .dot {
-      width: 12px; height:12px; border-radius:50%;
-    }
-
-    /* HISTORIAL */
-    .events {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      width: 100%;
-      max-width: 880px;
-      padding: var(--pad);
-    }
-    #toggle-history {
-      background: none;
-      border: none;
-      color: var(--accent-motion);
-      cursor: pointer;
-      margin-bottom: 12px;
-      font-size: 0.9rem;
-    }
-    .history.hidden { display: none; }
-    .history .event-item {
-      border-top: 1px solid var(--border);
-      padding: 8px 0;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      font-size: 0.88rem;
-    }
-    .history .event-item:first-child { border: none; }
-    .history .event-item .dot {
-      width: 12px; height:12px; border-radius:50%;
-      flex-shrink: 0;
-    }
-    .event-details {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .event-details img {
-      max-width: 160px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-
-    /* BOTONES FIJOS */
-    .btn-fixed {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1000;
-      text-decoration: none;
-    }
-    .btn-fixed button {
-      padding: 12px 18px;
-      background: linear-gradient(145deg, #3498db, #2980b9);
-      color: white;
-      font-weight: bold;
-      border: none;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-    }
-    .btn-fixed button:hover {
-      transform: scale(1.05);
-    }
-  </style>
-</head>
-<body>
-
-  <h1>PiVision IA – Dashboard</h1>
-
-  <!-- Botón Logout y usuario -->
-  <div style="position: fixed; top: 15px; right: 20px; z-index: 1000; display: flex; align-items: center; gap: 10px;">
-    <span style="color: #ccc; font-size: 14px; font-family: sans-serif;">
-      👤 {{ session.username }}
-    </span>
-    <form action="/logout" method="get">
-      <button type="submit" style="
-        padding: 10px 18px;
-        background: linear-gradient(145deg, #ff4b2b, #ff416c);
-        color: white;
-        font-size: 14px;
-        font-weight: bold;
-        border: none;
-        border-radius: 30px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s ease-in-out;
-      ">
-        <span style="font-size: 18px;">⏻</span> Cerrar sesión
-      </button>
-    </form>
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Monitoreo en vivo</h1>
+    <p><span id="reloj" class="tabnum"></span> · {{ camera_ids|length }} cámara{{ '' if camera_ids|length == 1 else 's' }} activa{{ '' if camera_ids|length == 1 else 's' }}</p>
   </div>
-
-  <!-- STREAMS MJPEG: muestra todas las cámaras -->
-  <div class="camera-grid">
-    {% for cam_id in camera_ids %}
-      <img
-        class="video-stream"
-        src="{{ url_for('dashboard.video_feed', camera_id=cam_id) }}"
-        alt="Feed cámara {{ cam_id }}">
-    {% endfor %}
+  <div class="no-print" style="display:flex; gap:8px; flex-wrap:wrap">
+    <a class="btn" href="{{ url_for('dashboard.eventos') }}?reviewed=false">Eventos pendientes</a>
+    <a class="btn" href="{{ url_for('dashboard.reportes') }}">Ver reportes</a>
   </div>
+</div>
 
-  <!-- MÉTRICAS -->
-  <section class="metrics">
-    <h2>Métricas del Sistema</h2>
-    <div class="metrics-grid">
-      <div class="metric-card"><h3>CPU</h3><span id="cpu">…%</span></div>
-      <div class="metric-card"><h3>RAM</h3><span id="memory">…%</span></div>
-      <div class="metric-card"><h3>Disco</h3><span id="disk">…%</span></div>
+<div class="live-layout">
+  <section aria-label="Cámaras">
+    {% if not camera_ids %}
+      <div class="panel" style="text-align:center; padding:40px; color:var(--ink-3)">
+        No hay cámaras disponibles. Revisa la conexión de la webcam y <code>CAMERA_IDS</code> en <code>config/settings.py</code>.
+      </div>
+    {% endif %}
+    <div class="cams">
+      {% for cam_id in camera_ids %}
+      <article class="panel cam" data-cam="{{ cam_id }}">
+        <div class="cam-head">
+          <h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.9L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg>
+            Cámara {{ cam_id }}</h2>
+          <div class="meta">
+            <span class="res">640 × 480</span>
+            <span class="tabnum" data-fps="{{ cam_id }}">— FPS</span>
+            <span class="pill live" data-pill="{{ cam_id }}"><i class="led"></i><span>EN VIVO</span></span>
+            <button type="button" class="btn sm power" data-power="{{ cam_id }}" aria-pressed="true"
+                    title="Apagar la cámara: deja de grabar eventos y fotos">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg>
+              <span>Apagar</span></button>
+          </div>
+        </div>
+        <div class="video" id="video-{{ cam_id }}">
+          <img src="{{ url_for('dashboard.video_feed', camera_id=cam_id) }}" alt="Video en vivo de la cámara {{ cam_id }}">
+          <div class="off">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 2l20 20M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-.68.95M10.66 6H13a2 2 0 0 1 2 2v2.34M15 15.66V16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1"/></svg>
+            <span class="senal">Sin señal de la cámara {{ cam_id }}. Reintentando…</span>
+            <span class="apag"><b>Cámara {{ cam_id }} apagada</b><br>No se capturan imágenes ni se guardan eventos o fotos.<br>Presiona <b>Encender</b> para reanudar.</span>
+          </div>
+        </div>
+        <div class="legend" aria-label="Qué significa cada marca en el video">
+          <span><i style="background:#50c850"></i>Persona (Hailo)</span>
+          <span><i style="background:#00c8ff"></i>Esqueleto / pose</span>
+          <span><i style="background:#ff3c3c"></i>Objeto</span>
+          <span><i style="background:#ffff00"></i>Rostro</span>
+          <span><i style="background:#0000ff"></i>Línea de conteo</span>
+        </div>
+      </article>
+      {% endfor %}
     </div>
+
+    <div class="last" id="last" aria-label="Último evento de cada tipo"></div>
   </section>
 
-  <!-- Previsualización Últimos Eventos -->
-  <section class="preview">
-    <h2>Último Evento de Cada Tipo</h2>
-    <div class="cards">
-      <div class="card" id="card-motion">
-        <div class="dot motion"></div>
-        <div class="type">Movimiento</div>
-        <div class="time">--:--:--</div>
-        <div class="msg">Esperando...</div>
+  <aside aria-label="Estado y actividad">
+    <section class="panel">
+      <div class="panel-head"><h2>Estado del sistema</h2><span class="sub" id="en-linea"></span></div>
+      <div class="stats">
+        <div class="stat"><span class="l">CPU</span><div class="meter" id="m-cpu"><i></i></div><span class="v" id="v-cpu">—</span></div>
+        <div class="stat"><span class="l">Memoria</span><div class="meter" id="m-mem"><i></i></div><span class="v" id="v-mem">—</span></div>
+        <div class="stat"><span class="l">Disco</span><div class="meter" id="m-disk"><i></i></div><span class="v" id="v-disk">—</span></div>
+        <div class="stat"><span class="l">Temperatura</span><div class="meter" id="m-temp"><i></i></div><span class="v" id="v-temp">—</span></div>
       </div>
-      <div class="card" id="card-face">
-        <div class="dot face"></div>
-        <div class="type">Rostro</div>
-        <div class="time">--:--:--</div>
-        <div class="msg">Esperando...</div>
-      </div>
-      <div class="card" id="card-gesture">
-        <div class="dot gesture"></div>
-        <div class="type">Gesto</div>
-        <div class="time">--:--:--</div>
-        <div class="msg">Esperando...</div>
-      </div>
-      <div class="card" id="card-people_count">
-        <div class="dot people_count"></div>
-        <div class="type">Personas</div>
-        <div class="time">--:--:--</div>
-        <div class="msg">Esperando...</div>
-      </div>
-    </div>
-    <div class="legend">
-      <div class="legend-item"><div class="dot motion"></div>Movimiento</div>
-      <div class="legend-item"><div class="dot face"></div>Rostro</div>
-      <div class="legend-item"><div class="dot gesture"></div>Gesto</div>
-      <div class="legend-item"><div class="dot people_count"></div>Personas</div>
-    </div>
-  </section>
+      <dl class="kv">
+        <dt>Acelerador</dt><dd id="k-hailo">—</dd>
+        <dt>Inferencia Hailo</dt><dd id="k-hailo-ms">—</dd>
+        <dt>Eventos guardados</dt><dd id="k-eventos">—</dd>
+      </dl>
+    </section>
 
-  <!-- Historial completo -->
-  <section class="events">
-    <button id="toggle-history">Ver historial completo</button>
-    <div id="history" class="history hidden"></div>
-  </section>
+    <section class="panel">
+      <div class="panel-head"><h2>Actividad reciente</h2><a class="sub" href="{{ url_for('dashboard.eventos') }}">Ver todo →</a></div>
+      <ul class="feed" id="feed" aria-live="polite"><li class="vacio">Cargando…</li></ul>
+    </section>
+  </aside>
+</div>
 
-  <!-- Botón Notificaciones -->
-  <a href="/dashboard/notifications" class="btn-fixed">
-    <button>⚙️ Notificaciones</button>
-  </a>
+<div class="toast" id="toast" role="status"></div>
+{% endblock %}
 
-  <script>
-    const MAX_HISTORY = 200;
-    let historyBuffer = [];
+{% block scripts %}
+<script>
+  const CAMS = {{ camera_ids|tojson }};
+  const TIPOS = {
+    motion: 'Movimiento', face: 'Rostro', people_count: 'Personas',
+    line_cross: 'Cruce de línea', gesture: 'Gesto', object: 'Objeto'
+  };
+  const ORDEN = ['people_count', 'face', 'object', 'gesture', 'line_cross', 'motion'];
+  const $ = s => document.querySelector(s);
+  const pad = n => String(n).padStart(2, '0');
+  const hora = d => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const parseTs = ts => new Date(String(ts).replace(' ', 'T'));
 
-    const lastByType = { motion: null, face: null, gesture: null, people_count: null };
+  // Reloj
+  const reloj = () => { const d = new Date();
+    $('#reloj').textContent = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ' + hora(d); };
+  reloj(); setInterval(reloj, 1000);
 
-    const src = new EventSource('/dashboard/events/0');
-    const cpu = document.getElementById('cpu');
-    const mem = document.getElementById('memory');
-    const dsk = document.getElementById('disk');
-    const toggleBtn = document.getElementById('toggle-history');
-    const historyEl = document.getElementById('history');
-    const types = ['motion','face','gesture','people_count'];
-
-    const cards = {};
-    types.forEach(t => {
-      cards[t] = {
-        timeEl: document.querySelector(`#card-${t} .time`),
-        msgEl:  document.querySelector(`#card-${t} .msg`)
-      };
-    });
-
-    const pad = n => n.toString().padStart(2, '0');
-    const fmtTime = ts => {
-      const d = new Date(ts);
-      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    };
-
-    function updateCard(type, evt, ts) {
-      const { timeEl, msgEl } = cards[type];
-      timeEl.textContent = fmtTime(ts);
-      switch(type) {
-        case 'motion':      msgEl.textContent = `Contornos: ${evt.n}`; break;
-        case 'face':        msgEl.textContent = `Label: ${evt.label||'Desconocido'}`; break;
-        case 'gesture':     msgEl.textContent = `Gesto: ${evt.gesture||'—'}`; break;
-        case 'people_count':msgEl.textContent = `Total: ${evt.count}`; break;
-      }
+  // Descripción en lenguaje natural (igual que la exportación CSV)
+  function describir(ev) {
+    const d = ev.data && typeof ev.data === 'object' ? { ...ev, ...ev.data } : ev;
+    switch (ev.type) {
+      case 'motion': { const v = d.area_pct ?? ev.value; return v != null ? `Movimiento en ${(+v).toFixed(1)}% del cuadro` : 'Movimiento detectado'; }
+      case 'face': return !ev.label || ev.label === 'Desconocido' ? 'Rostro desconocido' : `Rostro reconocido: ${ev.label}`;
+      case 'people_count': { const n = d.count ?? ev.value ?? 0; return n == 0 ? 'Sin personas en cuadro' : `${n} persona${n == 1 ? '' : 's'} en cuadro`; }
+      case 'line_cross': return `Cruce de línea ${ev.label === 'up' || d.dir === 'up' ? 'hacia arriba' : 'hacia abajo'}`;
+      case 'gesture': return `Gesto: ${(ev.label || d.gesture || 'gesto').replace('_', ' ')}`;
+      case 'object': { const c = d.count > 1 ? `${d.count} ` : ''; const p = ev.value != null ? ` · ${Math.round(ev.value * 100)}%` : '';
+                       return `Objeto: ${c}${ev.label || d.class || ''}${p}`; }
+      default: return ev.label || ev.type;
     }
+  }
+  function haceCuanto(d) {
+    const s = Math.max(0, Math.round((Date.now() - d) / 1000));
+    if (s < 10) return 'ahora'; if (s < 60) return `hace ${s} s`;
+    if (s < 3600) return `hace ${Math.floor(s / 60)} min`;
+    if (s < 86400) return `hace ${Math.floor(s / 3600)} h`;
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) + ' ' + hora(d).slice(0, 5);
+  }
 
-    function renderHistory() {
-      historyEl.innerHTML = '';
-      historyBuffer.slice(0, MAX_HISTORY).forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'event-item';
-        const dot = document.createElement('div');
-        dot.className = 'dot ' + item.type;
-        const text = document.createElement('div');
-        text.className = 'event-details';
-        const line = `[${fmtTime(item.ts)}] ${item.type.toUpperCase()}: ` +
-                     (item.type==='motion' ? `${item.n} contornos` :
-                      item.type==='face'   ? `Rostro=${item.label||'Desconocido'}` :
-                      item.type==='gesture'? `Gesto=${item.gesture||'—'}` :
-                      `Personas=${item.count}`);
-        const p = document.createElement('div');
-        p.textContent = line;
-        text.appendChild(p);
-        if(item.img && item.img.startsWith('data:image')) {
-          const img = document.createElement('img');
-          img.src = item.img;
-          text.appendChild(img);
-        }
-        div.append(dot, text);
-        historyEl.appendChild(div);
-      });
-    }
-
-    toggleBtn.addEventListener('click', () => {
-      historyEl.classList.toggle('hidden');
-      toggleBtn.textContent = historyEl.classList.contains('hidden')
-        ? 'Ver historial completo'
-        : 'Ocultar historial';
-      if(!historyEl.classList.contains('hidden')) renderHistory();
+  // ---------- último evento por tipo
+  const ultimo = {};
+  function pintarUltimos() {
+    const box = $('#last'); box.innerHTML = '';
+    ORDEN.forEach(t => {
+      const ev = ultimo[t], el = document.createElement('div');
+      el.className = 'item'; el.id = `last-${t}`;
+      el.innerHTML = `<div class="t"><span class="dot ${t}"></span>${TIPOS[t]}</div>
+        <div class="m"></div><div class="h"></div>`;
+      el.querySelector('.m').textContent = ev ? describir(ev) : 'Sin eventos aún';
+      el.querySelector('.h').textContent = ev ? hora(parseTs(ev.timestamp || ev.ts)) : '--:--:--';
+      if (!ev) el.querySelector('.m').style.color = 'var(--ink-3)';
+      box.appendChild(el);
     });
+  }
 
+  // ---------- feed de actividad
+  const feed = $('#feed'); const MAX = 25; let vistos = new Set();
+  // Las fotos de eventos de la BD se piden por id; las de eventos en vivo, por ruta
+  function imgSrc(ev) {
+    if (!ev.image_path) return null;
+    return ev._db ? `/dashboard/event_image/${ev.id}` : `/dashboard/event_file?p=${encodeURIComponent(ev.image_path)}`;
+  }
+  function agregar(ev, nuevo) {
+    const clave = `${ev.type}|${ev.timestamp || ev.ts}`;
+    if (vistos.has(clave)) return; vistos.add(clave);
+    if (feed.querySelector('.vacio')) feed.innerHTML = '';
+    const li = document.createElement('li'); if (nuevo) li.className = 'nuevo';
+    const a = document.createElement('a'); a.href = `{{ url_for('dashboard.eventos') }}?type=${ev.type}`;
+    const th = document.createElement('div'); th.className = 'th';
+    const src = imgSrc(ev);
+    if (src) {
+      const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; let intento = 0;
+      im.onerror = () => { if (intento++ < 2) setTimeout(() => im.src = src + '&r=' + intento, 1200); else im.remove(); };
+      im.src = src; th.appendChild(im);
+    } else th.innerHTML = `<span class="dot ${ev.type}"></span>`;
+    const tx = document.createElement('div');
+    tx.innerHTML = `<div class="d"><span class="dot ${ev.type}"></span><span></span></div><div class="w"></div>`;
+    tx.querySelector('.d span:last-child').textContent = describir(ev);
+    const d = parseTs(ev.timestamp || ev.ts); tx.querySelector('.w').dataset.t = d.getTime();
+    tx.querySelector('.w').textContent = `${haceCuanto(d)} · cámara ${ev.camera_id ?? '—'}`;
+    a.append(th, tx); li.appendChild(a);
+    nuevo ? feed.prepend(li) : feed.appendChild(li);
+    while (feed.children.length > MAX) feed.lastChild.remove();
+  }
+  setInterval(() => feed.querySelectorAll('.w').forEach(w => {
+    const t = +w.dataset.t; if (t) w.textContent = w.textContent.replace(/^[^·]+/, haceCuanto(new Date(t)) + ' ');
+  }), 15000);
+
+  async function cargarInicial() {
+    try {
+      const r = await fetch('/api/v1/events?limit=60');
+      const j = await r.json();
+      j.items.slice().reverse().forEach(ev => { ultimo[ev.type] = { ...ev, timestamp: ev.ts }; });
+      j.items.slice(0, MAX).forEach(ev => agregar({ ...ev, timestamp: ev.ts, ts: ev.ts, _db: true }, false));
+      if (!j.items.length) feed.innerHTML = '<li class="vacio">Aún no hay eventos.</li>';
+    } catch (e) { feed.innerHTML = '<li class="vacio">No se pudieron cargar los eventos.</li>'; }
+    pintarUltimos();
+  }
+
+  // ---------- métricas
+  function medir(id, valor, max, sufijo, alto, critico) {
+    const m = $(`#m-${id}`), v = $(`#v-${id}`);
+    if (valor == null) { v.textContent = '—'; return; }
+    m.querySelector('i').style.width = `${Math.min(100, 100 * valor / max)}%`;
+    m.className = 'meter' + (valor >= critico ? ' bad' : valor >= alto ? ' warn' : '');
+    v.textContent = `${Math.round(valor)}${sufijo}`;
+  }
+  function metricas(x) {
+    medir('cpu', x.cpu, 100, '%', 70, 90); medir('mem', x.memory, 100, '%', 75, 90);
+    medir('disk', x.disk, 100, '%', 80, 92); medir('temp', x.temp, 85, '°', 70, 80);
+  }
+
+  // ---------- eventos en vivo (un canal por cámara)
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 5000); }
+  CAMS.forEach(cam => {
+    const src = new EventSource(`/dashboard/events/${cam}`);
     src.onmessage = ({ data }) => {
-      let arr;
-      try { arr = JSON.parse(data); } catch { return; }
-      if(!Array.isArray(arr)) return;
-      const now = Date.now();
-      arr.forEach(evt => {
-        if(evt.type === 'metrics') {
-          cpu.textContent = `${evt.cpu}%`; mem.textContent = `${evt.memory}%`; dsk.textContent = `${evt.disk}%`;
-        } else if(types.includes(evt.type)) {
-          historyBuffer.unshift({ ...evt, ts: now });
-          updateCard(evt.type, evt, now);
-        }
-        // Notificación visual de gesto
-        if(evt.type === 'gesture') {
-          const div = document.createElement('div');
-          div.textContent = `🔔 Correo enviado: Gesto "${evt.gesture}" detectado`;
-          Object.assign(div.style, {
-            position: 'fixed',
-            bottom: '80px',
-            right: '20px',
-            background: '#2ecc71',
-            color: 'white',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            boxShadow: '0 0 10px rgba(0,0,0,0.4)',
-            fontWeight: 'bold',
-            fontFamily: 'sans-serif',
-            zIndex: 9999
-          });
-          document.body.appendChild(div);
-          setTimeout(() => div.remove(), 5000);
-        }
+      let arr; try { arr = JSON.parse(data); } catch { return; }
+      if (!Array.isArray(arr)) return;
+      arr.forEach(ev => {
+        if (ev.type === 'metrics') { metricas(ev); return; }
+        if (!TIPOS[ev.type]) return;
+        ultimo[ev.type] = ev; agregar(ev, true);
+        const el = $(`#last-${ev.type}`);
+        if (el) { el.querySelector('.m').textContent = describir(ev); el.querySelector('.m').style.color = '';
+                  el.querySelector('.h').textContent = hora(parseTs(ev.timestamp));
+                  el.classList.remove('flash-in'); void el.offsetWidth; el.classList.add('flash-in'); }
+        if (ev.type === 'gesture') toast(`🔔 ${describir(ev)} · cámara ${ev.camera_id}`);
       });
     };
-  </script>
+  });
 
-</body>
-</html>
+  // ---------- encender / apagar cámara
+  const FEED = id => `{{ url_for('dashboard.video_feed', camera_id=0) }}`.replace(/0$/, id);
+  const apagadas = {};
+  function pintarCamara(id, apagada) {
+    const antes = apagadas[id];
+    apagadas[id] = apagada;
+    const v = document.getElementById(`video-${id}`), b = document.querySelector(`[data-power="${id}"]`),
+          pill = document.querySelector(`[data-pill="${id}"]`), img = v?.querySelector('img');
+    if (!v || !b) return;
+    v.classList.toggle('apagada', apagada);
+    if (apagada) v.classList.remove('sin-senal');
+    b.classList.toggle('encender', apagada);
+    b.setAttribute('aria-pressed', String(!apagada));
+    b.querySelector('span').textContent = apagada ? 'Encender' : 'Apagar';
+    b.title = apagada ? 'Encender la cámara y reanudar la detección' : 'Apagar la cámara: deja de grabar eventos y fotos';
+    pill.className = apagada ? 'pill' : 'pill live';
+    pill.querySelector('span').textContent = apagada ? 'APAGADA' : 'EN VIVO';
+    if (apagada) { img.removeAttribute('src'); document.querySelector(`[data-fps="${id}"]`).textContent = '— FPS'; }
+    else if (antes === true || !img.getAttribute('src')) img.src = FEED(id) + '?t=' + Date.now();   // reabre el video
+  }
+  document.querySelectorAll('[data-power]').forEach(b => b.addEventListener('click', async () => {
+    const id = +b.dataset.power, on = !!apagadas[id];
+    b.disabled = true; b.querySelector('span').textContent = on ? 'Encendiendo…' : 'Apagando…';
+    try {
+      const r = await fetch(`/api/v1/cameras/${id}/power`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ on }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { toast(j.error || 'No se pudo cambiar la cámara'); pintarCamara(id, !!apagadas[id]); return; }
+      pintarCamara(id, j.apagada);
+      toast(j.apagada ? `Cámara ${id} apagada · no se guardan eventos` : `Cámara ${id} encendida`);
+    } catch (e) { toast('Sin conexión con la Pi'); pintarCamara(id, !!apagadas[id]); }
+    finally { b.disabled = false; }
+  }));
+
+  // ---------- estado (Hailo, FPS por cámara, señal)
+  const previo = {};
+  async function estado() {
+    try {
+      const s = await (await fetch('/api/v1/status')).json();
+      const h = s.hailo || {};
+      $('#k-hailo').textContent = h.disponible ? (h.pose ? 'Hailo-8 · objetos y pose' : 'Hailo-8 · objetos')
+                                : h.disponible === false ? 'Sin conexión (CPU)' : 'Conectando…';
+      const c0 = (s.camaras || [])[0] || {}, t = c0.hailo || {};
+      const partes = [];
+      if (t.pose_infer_ms != null) partes.push(`pose ${(+t.pose_infer_ms).toFixed(1)} ms`);
+      if (t.infer_ms != null) partes.push(`objetos ${(+t.infer_ms).toFixed(1)} ms`);
+      $('#k-hailo-ms').textContent = partes.length ? partes.join(' · ') : '—';
+      $('#k-eventos').textContent = (s.eventos?.guardados ?? 0).toLocaleString('es-MX') + ' en esta sesión';
+      const m = Math.floor(s.en_linea_s / 60);
+      $('#en-linea').textContent = `En línea ${m >= 60 ? Math.floor(m / 60) + ' h ' : ''}${m % 60} min`;
+      if (s.sistema) metricas(s.sistema);
+      const ahora = Date.now();
+      (s.camaras || []).forEach(c => {
+        if (apagadas[c.id] !== !!c.apagada) pintarCamara(c.id, !!c.apagada);   // p. ej. apagada desde otra pestaña
+        if (c.apagada) { delete previo[c.id]; return; }
+        const p = previo[c.id];
+        if (p && c.procesados != null) {
+          const fps = (c.procesados - p.n) / ((ahora - p.t) / 1000);
+          const el = document.querySelector(`[data-fps="${c.id}"]`);
+          if (el) el.textContent = `${fps.toFixed(1)} FPS`;
+          document.getElementById(`video-${c.id}`)?.classList.toggle('sin-senal', !c.activa || (c.capturados === p.c));
+        }
+        previo[c.id] = { n: c.procesados, c: c.capturados, t: ahora };
+      });
+    } catch (e) { /* el estado es secundario */ }
+  }
+  estado(); setInterval(estado, 3000);
+  cargarInicial();
+</script>
+{% endblock %}

@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash
 
 auth_bp = Blueprint('auth', __name__)
 
-DB_PATH = "pivision.db"  # Asegúrate que coincida con tu ruta de base de datos
+from db import DB_PATH  # base unificada: database/pivision.db
 
 # Página de Login
 @auth_bp.route('/login', methods=['GET', 'POST'])

@@ -1,0 +1,12 @@
+# Dependencias reales de PiVision IA (Python 3.11, aarch64)
+flask==3.1.1
+Werkzeug==3.1.3
+numpy==1.26.4
+opencv-contrib-python==4.11.0.86
+mediapipe==0.10.18
+tflite-runtime==2.14.0
+scipy
+psutil
+python-dotenv
+requests
+pillow

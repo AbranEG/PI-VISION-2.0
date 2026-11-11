@@ -1,0 +1,109 @@
+{
+  "fecha": "2026-10-31T13:17:48",
+  "hef": "/usr/share/hailo-models/yolov8s_h8.hef",
+  "fuente": "0",
+  "segundos": 20.0,
+  "frames": 401,
+  "fps": 20.03,
+  "etapas": {
+    "captura": {
+      "n": 401,
+      "media_ms": 36.26,
+      "p50_ms": 35.06,
+      "p95_ms": 39.0,
+      "max_ms": 39.07
+    },
+    "preproceso": {
+      "n": 401,
+      "media_ms": 0.94,
+      "p50_ms": 0.93,
+      "p95_ms": 0.97,
+      "max_ms": 1.11
+    },
+    "inferencia_hailo": {
+      "n": 401,
+      "media_ms": 11.88,
+      "p50_ms": 11.87,
+      "p95_ms": 12.03,
+      "max_ms": 12.2
+    },
+    "postproceso": {
+      "n": 401,
+      "media_ms": 0.17,
+      "p50_ms": 0.16,
+      "p95_ms": 0.17,
+      "max_ms": 0.18
+    },
+    "total": {
+      "n": 401,
+      "media_ms": 49.24,
+      "p50_ms": 48.05,
+      "p95_ms": 52.04,
+      "max_ms": 52.16
+    }
+  },
+  "clases_detectadas": {
+    "tv": 409,
+    "person": 402,
+    "remote": 23,
+    "refrigerator": 16,
+    "bottle": 10,
+    "cell phone": 5,
+    "chair": 3
+  },
+  "frames_con_clase_pct": {
+    "person": 100.0,
+    "tv": 100.0,
+    "bottle": 2.5,
+    "refrigerator": 4.0,
+    "cell phone": 1.2,
+    "remote": 5.2,
+    "chair": 0.7
+  },
+  "confianza_por_clase": {
+    "person": {
+      "max": 0.93,
+      "mediana": 0.91,
+      "p25": 0.9,
+      "n": 402
+    },
+    "tv": {
+      "max": 0.81,
+      "mediana": 0.66,
+      "p25": 0.61,
+      "n": 409
+    },
+    "bottle": {
+      "max": 0.33,
+      "mediana": 0.22,
+      "p25": 0.21,
+      "n": 10
+    },
+    "refrigerator": {
+      "max": 0.35,
+      "mediana": 0.23,
+      "p25": 0.21,
+      "n": 16
+    },
+    "cell phone": {
+      "max": 0.44,
+      "mediana": 0.26,
+      "p25": 0.23,
+      "n": 5
+    },
+    "remote": {
+      "max": 0.35,
+      "mediana": 0.23,
+      "p25": 0.22,
+      "n": 23
+    },
+    "chair": {
+      "max": 0.27,
+      "mediana": 0.25,
+      "p25": 0.24,
+      "n": 3
+    }
+  },
+  "python": "3.13.5",
+  "hailo_platform": "4.23.0"
+}

@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+{% block title %}Eventos{% endblock %}
+{% block head %}
+  <style>
+    /* Variables propias de esta página, sobre los tokens del sistema de diseño */
+    :root { --bg-dark: var(--page); --bg-panel: var(--surface); --bg-card: var(--surface-2); --text: var(--ink);
+            --muted: var(--ink-3); --accent: var(--brand-ink);
+            --c-motion: var(--t-motion); --c-face: var(--t-face); --c-gesture: var(--t-gesture);
+            --c-people_count: var(--t-people_count); --c-line_cross: var(--t-line_cross); --c-object: var(--t-object) }
+    .btn.ok { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600 }
+    .btn.ok:hover { background: var(--brand-hover) }
+    .filters label:not(.tchk) { font-weight: 500 }
+    .chip.pending { border-color: rgba(250,178,25,.35) }
+    .card .meta { font-family: var(--mono) }
+    .dlg .media { border-radius: 12px 0 0 12px }
+    .modal { backdrop-filter: blur(2px) }
+    /* Resumen */
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px }
+    .chip { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; cursor: pointer }
+    .chip:hover { border-color: var(--border-strong); background: var(--surface-2) }
+    .chip .n { font-size: 1.5rem; font-weight: 700 }
+    .chip .t { color: var(--muted); font-size: .85rem; display: flex; align-items: center; gap: 6px }
+    .chip.pending .n { color: var(--warn) }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none }
+
+    /* Filtros */
+    .filters { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px;
+               display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 12px }
+    .filters label { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--muted) }
+
+    .types { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; align-items: center }
+    .types .lbl { color: var(--muted); font-size: .8rem; margin-right: 4px }
+    .tchk { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--border);
+            border-radius: 20px; cursor: pointer; font-size: .85rem; user-select: none }
+    .filters label.tchk { flex-direction: row; color: var(--text); font-size: .85rem }
+    .tchk input { display: none }
+    .tchk:hover { border-color: var(--border-strong) }
+    .tchk.on { border-color: var(--brand-ink); background: var(--brand-soft) }
+    .actions { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+    .actions .sp { flex: 1 }
+
+    /* Barra de resultados */
+    .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; color: var(--muted); font-size: .9rem }
+    .bar .sp { flex: 1 }
+
+    /* Tarjetas */
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) }
+    .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer;
+            display: flex; flex-direction: column }
+    .card:hover { border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--shadow) }
+    .card { transition: transform .12s, box-shadow .12s, border-color .12s }
+    .card.reviewed { opacity: .6 }
+    .thumb { position: relative; aspect-ratio: 4 / 3; background: #05080f; display: flex; align-items: center; justify-content: center; color: #555; font-size: .8rem }
+    .thumb img { width: 100%; height: 100%; object-fit: contain; display: block }
+    .bbox { position: absolute; border: 2px solid #ffeb3b; border-radius: 2px; pointer-events: none }
+    .card .body { padding: 8px 10px; display: flex; flex-direction: column; gap: 3px }
+    .card .row1 { display: flex; align-items: center; gap: 6px; font-weight: 600 }
+    .card .row1 .flags { margin-left: auto; display: flex; gap: 6px; font-weight: 400; font-size: .85rem }
+    .card .desc { font-size: .9rem }
+    .card .meta { color: var(--muted); font-size: .8rem; font-family: ui-monospace, monospace }
+    .empty { text-align: center; color: var(--muted); padding: 40px 0 }
+
+    /* Detalle */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100 }
+    .modal.open { display: flex }
+    .dlg { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; width: min(1040px, 100%); box-shadow: var(--shadow);
+             max-height: 100%; overflow: auto; display: grid; grid-template-columns: 3fr 2fr }
+    .dlg .media { position: relative; background: #000; display: flex; align-items: center; justify-content: center; min-height: 260px }
+    .dlg .media .wrap { position: relative; display: inline-block; max-width: 100% }
+    .dlg .media img { max-width: 100%; max-height: 75vh; display: block }
+    .dlg .info { padding: 14px; display: flex; flex-direction: column; gap: 10px }
+    .dlg h2 { font-size: 1.15rem; display: flex; align-items: center; gap: 8px }
+    .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: .9rem }
+    .kv dt { color: var(--muted) } .kv dd { word-break: break-word }
+    textarea { min-height: 84px; resize: vertical }
+    pre { background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: .78rem; overflow: auto; max-height: 160px }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+    .hint { color: var(--muted); font-size: .78rem }
+    @media (max-width: 760px) { .dlg { grid-template-columns: 1fr } .bar .sp { display: none } }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1>Eventos</h1>
+      <p>Busca, revisa y anota lo que detectó el sistema. Cada evento guarda su foto como evidencia.</p>
+    </div>
+  </div>
+
+  <!-- Resumen de las últimas 24 h -->
+  <section class="summary" id="summary" aria-label="Resumen de las últimas 24 horas"></section>
+
+  <!-- Filtros -->
+  <form class="filters" id="filters" autocomplete="off">
+    <div class="types" id="types"><span class="lbl">Tipo:</span></div>
+    <label>Cámara
+      <select name="camera">
+        <option value="">Todas</option>
+        {% for cam_id in camera_ids %}<option value="{{ cam_id }}">Cámara {{ cam_id }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Etiqueta (persona, gesto, objeto…)
+      <input type="text" name="label" placeholder="ej. Desconocido">
+    </label>
+    <label>Desde <input type="datetime-local" name="since"></label>
+    <label>Hasta <input type="datetime-local" name="until"></label>
+    <label>Estado
+      <select name="reviewed">
+        <option value="">Todos</option>
+        <option value="false">Sin revisar</option>
+        <option value="true">Revisados</option>
+      </select>
+    </label>
+    <div class="actions">
+      <button type="button" class="btn" data-range="1">Última hora</button>
+      <button type="button" class="btn" data-range="today">Hoy</button>
+      <button type="button" class="btn" data-range="24">24 h</button>
+      <button type="button" class="btn" data-range="168">7 días</button>
+      <span class="sp"></span>
+      <button type="reset" class="btn" id="clear">Limpiar</button>
+      <button type="submit" class="btn primary">Filtrar</button>
+    </div>
+  </form>
+
+  <div class="bar">
+    <strong id="count" style="color: var(--ink)">Cargando…</strong>
+    <label class="hint" style="display:inline-flex; gap:6px; align-items:center"><input type="checkbox" id="auto" checked> Actualizar cada 15 s</label>
+    <span class="sp"></span>
+    <button class="btn sm" id="reviewAll" title="Marca como revisados los eventos de esta página">✔ Marcar página como revisada</button>
+    <a class="btn sm" id="csv" href="/api/v1/events/export.csv" title="Exporta los eventos filtrados con columnas claras en español">⬇ Exportar CSV</a>
+    <a class="btn sm" id="csvfull" href="/api/v1/events/export_full.csv" title="Exporta los eventos filtrados con los campos originales y datos técnicos (JSON)">⬇ Datos completos</a>
+    <button class="btn sm" id="prev" aria-label="Página anterior">‹</button>
+    <button class="btn sm" id="next" aria-label="Página siguiente">›</button>
+  </div>
+
+  <section class="grid" id="grid" aria-live="polite"></section>
+
+  <!-- Detalle -->
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="d-title">
+    <div class="dlg">
+      <div class="media" id="d-media"></div>
+      <div class="info">
+        <div class="row" style="justify-content: space-between">
+          <h2 id="d-title"></h2>
+          <button class="btn" id="d-close" aria-label="Cerrar">✕</button>
+        </div>
+        <dl class="kv" id="d-kv"></dl>
+        <div class="row">
+          <button class="btn ok" id="d-review"></button>
+          <a class="btn" id="d-open" target="_blank" rel="noopener">Abrir foto</a>
+        </div>
+        <label class="hint" for="d-notes">Notas</label>
+        <textarea id="d-notes" maxlength="2000" placeholder="Ej. Personal de limpieza, falsa alarma, se avisó a vigilancia…"></textarea>
+        <div class="row"><button class="btn primary" id="d-save">Guardar nota</button><span class="hint" id="d-saved"></span></div>
+        <details><summary class="hint">Datos técnicos</summary><pre id="d-json"></pre></details>
+        <div class="row" style="justify-content: space-between; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border)">
+          <button class="btn sm" id="d-prev">‹ Anterior</button>
+          <button class="btn sm" id="d-next">Siguiente ›</button>
+        </div>
+        <span class="hint" style="text-align: center">Teclado: ← → navegar · R revisado · Esc cerrar</span>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const TYPES = {
+      motion:       { name: 'Movimiento',     color: 'var(--c-motion)' },
+      face:         { name: 'Rostro',         color: 'var(--c-face)' },
+      people_count: { name: 'Personas',       color: 'var(--c-people_count)' },
+      line_cross:   { name: 'Cruce de línea', color: 'var(--c-line_cross)' },
+      gesture:      { name: 'Gesto',          color: 'var(--c-gesture)' },
+      object:       { name: 'Objeto',         color: 'var(--c-object)' },
+    };
+    const PAGE = 24;
+    let offset = 0, total = 0, items = [], current = -1;
+    const $ = s => document.querySelector(s);
+    const form = $('#filters');
+
+    // ---------- utilidades
+    const pad = n => String(n).padStart(2, '0');
+    const fmtTs = ts => ts ? `${ts.slice(8, 10)}/${ts.slice(5, 7)} ${ts.slice(11, 19)}` : '—';
+    const localInput = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const toApi = v => v ? v.replace('T', ' ') : '';
+    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+    function toast(msg) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast._t); toast._t = setTimeout(() => t.style.display = 'none', 2200); }
+
+    function describe(ev) {
+      const d = ev.data || {};
+      switch (ev.type) {
+        case 'motion':       { const v = ev.value ?? d.area_pct; return v != null ? `${(+v).toFixed(1)}% del cuadro cambió` : 'Movimiento'; }
+        case 'face':         return ev.label === 'Desconocido' || !ev.label ? 'Rostro desconocido'
+                                    : `${ev.label}${ev.value != null ? ` (distancia ${(+ev.value).toFixed(2)})` : ''}`;
+        case 'people_count': return `${ev.value ?? d.count ?? 0} persona(s) en cuadro${d.fuente === 'hailo' ? ' · Hailo' : d.fuente === 'rostros' ? ' · por rostros' : ''}`;
+        case 'line_cross':   return `Cruce hacia ${ev.label === 'up' ? 'arriba' : 'abajo'}`;
+        case 'gesture':      return (ev.label || 'gesto').replace('_', ' ');
+        case 'object':       return `${ev.label || 'objeto'}${d.count > 1 ? ` ×${d.count}` : ''}${ev.value != null ? ` · ${Math.round(ev.value * 100)}% de confianza` : ''}`;
+        default:             return ev.label || '';
+      }
+    }
+
+    // Recuadro sobre la foto: bbox [x, y, w, h] en píxeles del cuadro original
+    function addBox(container, ev) {
+      const d = ev.data || {}, fs = d.frame_size || [640, 480];
+      // Objetos: todos los recuadros de esa clase; rostros: uno
+      const boxes = Array.isArray(d.boxes) && d.boxes.length ? d.boxes : (Array.isArray(d.bbox) ? [d.bbox] : []);
+      boxes.filter(b => Array.isArray(b) && b.length === 4).forEach(b => {
+        const box = el('div', 'bbox');
+        if (ev.type === 'object') box.style.borderColor = 'var(--c-object)';
+        box.style.left = `${100 * b[0] / fs[0]}%`; box.style.top = `${100 * b[1] / fs[1]}%`;
+        box.style.width = `${100 * b[2] / fs[0]}%`; box.style.height = `${100 * b[3] / fs[1]}%`;
+        container.appendChild(box);
+      });
+    }
+
+    // ---------- filtros
+    const typesBox = $('#types');
+    Object.entries(TYPES).forEach(([key, t]) => {
+      const lab = el('label', 'tchk');
+      const cb = el('input'); cb.type = 'checkbox'; cb.name = 'type'; cb.value = key;
+      const dot = el('span', 'dot'); dot.style.background = t.color;
+      lab.append(cb, dot, document.createTextNode(t.name));
+      cb.addEventListener('change', () => lab.classList.toggle('on', cb.checked));
+      typesBox.appendChild(lab);
+    });
+
+    function params() {
+      const fd = new FormData(form), p = new URLSearchParams();
+      const types = fd.getAll('type'); if (types.length) p.set('type', types.join(','));
+      for (const k of ['camera', 'label', 'reviewed']) if (fd.get(k)) p.set(k, fd.get(k).trim());
+      if (fd.get('since')) p.set('since', toApi(fd.get('since')));
+      if (fd.get('until')) p.set('until', toApi(fd.get('until')));
+      return p;
+    }
+
+    form.addEventListener('submit', e => { e.preventDefault(); offset = 0; load(); });
+    $('#clear').addEventListener('click', () => setTimeout(() => {
+      document.querySelectorAll('.tchk').forEach(l => l.classList.remove('on')); offset = 0; load();
+    }));
+    document.querySelectorAll('[data-range]').forEach(b => b.addEventListener('click', () => {
+      const now = new Date(), r = b.dataset.range;
+      const from = r === 'today' ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : new Date(now - (+r) * 3600e3);
+      form.since.value = localInput(from); form.until.value = '';
+      offset = 0; load();
+    }));
+
+    // ---------- carga
+    async function api(url, opts) {
+      const r = await fetch(url, opts);
+      if (r.status === 401) { location.href = '/login'; throw new Error('sesión'); }
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }
+
+    async function load() {
+      const p = params();
+      // Las exportaciones usan los mismos filtros que la lista (todas las páginas)
+      $('#csv').href = `/api/v1/events/export.csv?${p}`;
+      $('#csvfull').href = `/api/v1/events/export_full.csv?${p}`;
+      p.set('limit', PAGE); p.set('offset', offset);
+      try {
+        const j = await api(`/api/v1/events?${p}`);
+        total = j.total; items = j.items; render();
+      } catch (e) { $('#count').textContent = `Error al cargar: ${e.message}`; }
+      loadSummary();
+    }
+
+    async function loadSummary() {
+      try {
+        const since = new Date(Date.now() - 24 * 3600e3);
+        const s = await api(`/api/v1/events/summary?since=${encodeURIComponent(toApi(localInput(since)))}`);
+        const pend = await api('/api/v1/events?reviewed=false&limit=1');
+        const box = $('#summary'); box.innerHTML = '';
+        const mk = (n, label, color, onClick, cls) => {
+          const c = el('div', 'chip' + (cls ? ' ' + cls : '')); const t = el('div', 't');
+          if (color) { const d = el('span', 'dot'); d.style.background = color; t.appendChild(d); }
+          t.appendChild(document.createTextNode(label));
+          c.append(el('div', 'n', n), t); c.addEventListener('click', onClick); box.appendChild(c);
+        };
+        mk(pend.total, 'Sin revisar (total)', null, () => { form.reset(); form.reviewed.value = 'false'; resetTypes(); offset = 0; load(); }, 'pending');
+        mk(s.total, 'Eventos en 24 h', null, () => { form.reset(); resetTypes(); document.querySelector('[data-range="24"]').click(); });
+        Object.entries(TYPES).forEach(([k, t]) => {
+          mk(s.por_tipo[k] || 0, `${t.name} · 24 h`, t.color, () => {
+            form.reset(); resetTypes(k); form.since.value = localInput(since); offset = 0; load();
+          });
+        });
+      } catch (e) { /* el resumen es secundario */ }
+    }
+
+    function resetTypes(only) {
+      document.querySelectorAll('.tchk').forEach(l => {
+        const cb = l.querySelector('input'); cb.checked = (cb.value === only); l.classList.toggle('on', cb.checked);
+      });
+    }
+
+    function render() {
+      const grid = $('#grid'); grid.innerHTML = '';
+      const a = total ? offset + 1 : 0, b = Math.min(offset + items.length, total);
+      $('#count').textContent = `${a}–${b} de ${total} eventos`;
+      $('#prev').disabled = offset === 0; $('#next').disabled = offset + PAGE >= total;
+      $('#reviewAll').disabled = !items.some(e => !e.reviewed);
+      if (!items.length) { grid.appendChild(el('div', 'empty', 'No hay eventos con estos filtros.')); return; }
+      items.forEach((ev, i) => {
+        const t = TYPES[ev.type] || { name: ev.type, color: '#777' };
+        const card = el('article', 'card' + (ev.reviewed ? ' reviewed' : ''));
+        const th = el('div', 'thumb');
+        if (ev.image_path) {
+          const img = el('img'); img.loading = 'lazy'; img.alt = `${t.name} ${fmtTs(ev.ts)}`;
+          img.src = `/dashboard/event_image/${ev.id}`;
+          img.onerror = () => { th.textContent = 'Foto no disponible'; };
+          th.appendChild(img); addBox(th, ev);
+        } else th.textContent = 'Sin foto';
+        const body = el('div', 'body');
+        const r1 = el('div', 'row1'); const dot = el('span', 'dot'); dot.style.background = t.color;
+        const flags = el('span', 'flags');
+        if (ev.notes) flags.appendChild(el('span', null, '📝'));
+        if (ev.reviewed) flags.appendChild(el('span', null, '✔'));
+        r1.append(dot, document.createTextNode(t.name), flags);
+        body.append(r1, el('div', 'desc', describe(ev)),
+                    el('div', 'meta', `${fmtTs(ev.ts)} · cám ${ev.camera_id ?? '—'}${ev.source === 'legacy' ? ' · heredado' : ''}`));
+        card.append(th, body);
+        card.addEventListener('click', () => openDetail(i));
+        grid.appendChild(card);
+      });
+    }
+
+    $('#prev').addEventListener('click', () => { offset = Math.max(0, offset - PAGE); load(); });
+    $('#next').addEventListener('click', () => { offset += PAGE; load(); });
+    $('#reviewAll').addEventListener('click', async () => {
+      const ids = items.filter(e => !e.reviewed).map(e => e.id);
+      const r = await api('/api/v1/events/review', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                      body: JSON.stringify({ ids, reviewed: true }) });
+      toast(`${r.actualizados} eventos marcados como revisados`); load();
+    });
+
+    // ---------- detalle
+    function openDetail(i) {
+      current = i; const ev = items[i]; if (!ev) return;
+      const t = TYPES[ev.type] || { name: ev.type, color: '#777' };
+      const title = $('#d-title'); title.innerHTML = '';
+      const dot = el('span', 'dot'); dot.style.background = t.color;
+      title.append(dot, document.createTextNode(`${t.name} · ${describe(ev)}`));
+      const media = $('#d-media'); media.innerHTML = '';
+      if (ev.image_path) {
+        const wrap = el('div', 'wrap'); const img = el('img'); img.alt = title.textContent;
+        img.src = `/dashboard/event_image/${ev.id}`; img.onerror = () => { media.textContent = 'Foto no disponible'; };
+        wrap.appendChild(img); addBox(wrap, ev); media.appendChild(wrap);
+        $('#d-open').href = img.src; $('#d-open').style.display = '';
+      } else { media.appendChild(el('span', 'hint', 'Este evento no tiene foto')); $('#d-open').style.display = 'none'; }
+      const kv = $('#d-kv'); kv.innerHTML = '';
+      const add = (k, v) => { kv.append(el('dt', null, k), el('dd', null, v)); };
+      add('Fecha', ev.ts); add('Cámara', ev.camera_id ?? '—'); add('Etiqueta', ev.label ? String(ev.label).replace(/_/g, ' ') : '—');
+      add('Valor', ev.value ?? '—'); add('Origen', ev.source === 'legacy' ? 'Sistema anterior (migrado)' : 'Pipeline'); add('Id', ev.id);
+      $('#d-notes').value = ev.notes || ''; $('#d-saved').textContent = '';
+      $('#d-json').textContent = JSON.stringify(ev.data, null, 2);
+      setReviewBtn(ev);
+      $('#d-prev').disabled = i === 0; $('#d-next').disabled = i === items.length - 1;
+      $('#modal').classList.add('open');
+    }
+    function setReviewBtn(ev) {
+      const b = $('#d-review');
+      b.textContent = ev.reviewed ? '↺ Marcar como no revisado' : '✔ Marcar como revisado';
+      b.classList.toggle('ok', !ev.reviewed);
+    }
+    async function patch(body) {
+      const ev = items[current];
+      const upd = await api(`/api/v1/events/${ev.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      items[current] = { ...ev, reviewed: upd.reviewed, notes: upd.notes };
+      return items[current];
+    }
+    async function toggleReview() { const ev = await patch({ reviewed: !items[current].reviewed }); setReviewBtn(ev); render(); }
+    function closeDetail() { $('#modal').classList.remove('open'); current = -1; }
+
+    $('#d-review').addEventListener('click', toggleReview);
+    $('#d-save').addEventListener('click', async () => {
+      await patch({ notes: $('#d-notes').value }); $('#d-saved').textContent = 'Guardada ✔'; render();
+    });
+    $('#d-close').addEventListener('click', closeDetail);
+    $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeDetail(); });
+    $('#d-prev').addEventListener('click', () => openDetail(current - 1));
+    $('#d-next').addEventListener('click', () => openDetail(current + 1));
+    document.addEventListener('keydown', e => {
+      if (current < 0 || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'Escape') closeDetail();
+      else if (e.key === 'ArrowLeft' && current > 0) openDetail(current - 1);
+      else if (e.key === 'ArrowRight' && current < items.length - 1) openDetail(current + 1);
+      else if (e.key.toLowerCase() === 'r') toggleReview();
+    });
+
+    // ---------- actualización automática (solo en la primera página y sin el detalle abierto)
+    setInterval(() => { if ($('#auto').checked && offset === 0 && current < 0) load(); }, 15000);
+
+    // Filtros iniciales desde la URL (ej. /dashboard/eventos?type=gesture)
+    const q = new URLSearchParams(location.search);
+    if (q.get('type')) resetTypes(q.get('type'));
+    if (q.get('reviewed')) form.reviewed.value = q.get('reviewed');
+    load();
+  </script>
+{% endblock %}

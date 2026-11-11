@@ -74,9 +74,10 @@ class GestureDetector:
 # 2. CLASE HANDLER (sin cambios)
 # ------------------------------------------------------
 class GestureHandler:
-    def __init__(self, session_dir, cooldown=1.0):
+    def __init__(self, session_dir, cooldown=1.0, log_to_db=True):
         self.detector    = GestureDetector()
-        self.db          = Database()
+        self.log_to_db   = log_to_db   # False cuando el pipeline registra en el EventStore
+        self.db          = Database() if log_to_db else None
         self.session_dir = session_dir
         self.cooldown    = cooldown
         self.last_event  = 0.0
@@ -102,7 +103,8 @@ class GestureHandler:
             self.session_dir, f"cam{cam_id}_{gesture}_{ts}.jpg")
         cv2.imwrite(filename, frame)
 
-        self.db.log_event(
+        if self.log_to_db:
+          self.db.log_event(
             camera_id    = cam_id,
             event_type   = 'gesture',
             person_id    = None,

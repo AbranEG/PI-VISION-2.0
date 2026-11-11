@@ -1,0 +1,65 @@
+{
+  "fecha": "2026-09-29T18:02:18",
+  "hef": "/usr/share/hailo-models/yolov8s_h8.hef",
+  "fuente": "0",
+  "segundos": 30.0,
+  "frames": 455,
+  "fps": 15.14,
+  "etapas": {
+    "captura": {
+      "n": 455,
+      "media_ms": 52.59,
+      "p50_ms": 55.09,
+      "p95_ms": 59.12,
+      "max_ms": 59.71
+    },
+    "preproceso": {
+      "n": 455,
+      "media_ms": 0.92,
+      "p50_ms": 0.92,
+      "p95_ms": 0.97,
+      "max_ms": 1.11
+    },
+    "inferencia_hailo": {
+      "n": 455,
+      "media_ms": 11.83,
+      "p50_ms": 11.8,
+      "p95_ms": 12.05,
+      "max_ms": 13.22
+    },
+    "postproceso": {
+      "n": 455,
+      "media_ms": 0.16,
+      "p50_ms": 0.16,
+      "p95_ms": 0.17,
+      "max_ms": 0.29
+    },
+    "total": {
+      "n": 455,
+      "media_ms": 65.5,
+      "p50_ms": 67.98,
+      "p95_ms": 71.99,
+      "max_ms": 73.73
+    }
+  },
+  "clases_detectadas": {
+    "person": 472,
+    "chair": 129,
+    "remote": 10,
+    "cell phone": 4,
+    "handbag": 1,
+    "donut": 1,
+    "cat": 1
+  },
+  "frames_con_clase_pct": {
+    "person": 98.2,
+    "chair": 27.0,
+    "remote": 2.2,
+    "cell phone": 0.9,
+    "handbag": 0.2,
+    "donut": 0.2,
+    "cat": 0.2
+  },
+  "python": "3.13.5",
+  "hailo_platform": "4.23.0"
+}

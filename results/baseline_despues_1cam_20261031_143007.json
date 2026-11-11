@@ -1,0 +1,251 @@
+{
+  "meta": {
+    "label": "despues_1cam",
+    "escena": "1 persona sentada frente a cámara",
+    "fecha": "2026-10-31T14:28:49",
+    "code_dir": "/home/pi/PiVision-IA",
+    "git_commit": "7b85e78",
+    "git_describe": "v1.0-baseline-dirty",
+    "git_cambios_sin_commit": [
+      "M app/__init__.py",
+      " M app/ai_engine.py",
+      " M app/camera_manager.py",
+      " M app/frame_processor.py",
+      " M app/gesture_handler.py",
+      " M app/routes/api.py",
+      " M app/routes/auth.py",
+      " M app/routes/dashboard.py",
+      " M app/system_monitor.py",
+      " M app/templates/index.html",
+      " M config/notifications.json",
+      " M config/settings.py",
+      " M face_matcher.py",
+      " M init_users.py",
+      " M server.py",
+      " M tests/get_chat_id.py",
+      " M tests/test_telegram.py",
+      " M utils/notifier.py"
+    ],
+    "camaras": [
+      "0"
+    ],
+    "resolucion_pipeline": "640x480",
+    "duracion_s": 60,
+    "warmup_s": 10,
+    "env": {
+      "USE_TPU": "false",
+      "DETECTION_FRAME_SKIP": "2",
+      "FACE_MATCH_THRESHOLD": "0.45",
+      "GESTURE_DETECTION_CONFIDENCE": "0.7"
+    },
+    "sistema": {
+      "modelo_pi": "Raspberry Pi 5 Model B Rev 1.1",
+      "os": "Debian GNU/Linux 13 (trixie)",
+      "kernel": "6.18.50+rpt-rpi-2712",
+      "python": "3.11.16",
+      "nucleos": 4,
+      "ram_total_mb": 8058,
+      "hailo_dev": true,
+      "throttled_inicio": "throttled=0x0"
+    },
+    "paquetes": {
+      "opencv-contrib-python": "4.11.0.86",
+      "opencv-python": null,
+      "mediapipe": "0.10.18",
+      "numpy": "1.26.4",
+      "tflite-runtime": "2.14.0",
+      "ai-edge-litert": null,
+      "flask": "3.1.1"
+    },
+    "modelo_mobilefacenet_sha256": "be4bc7cfc53f7bc336d0f28b1ab92535f618c913a422b683210750f6b5354854"
+  },
+  "fps_camara_sin_ia": {
+    "0": {
+      "fps": 14.4,
+      "frame": "640x480"
+    }
+  },
+  "fps_pipeline_por_camara": {
+    "0": 18.0
+  },
+  "fps_pipeline_total": 18.0,
+  "etapas": {
+    "movimiento": {
+      "n": 1080,
+      "media_ms": 1.03,
+      "p50_ms": 0.97,
+      "p95_ms": 1.47,
+      "max_ms": 1.89,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 1.9
+    },
+    "malla_facial": {
+      "n": 1080,
+      "media_ms": 5.16,
+      "p50_ms": 4.68,
+      "p95_ms": 12.46,
+      "max_ms": 15.46,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 9.7
+    },
+    "normalizacion": {
+      "n": 56,
+      "media_ms": 4.56,
+      "p50_ms": 4.25,
+      "p95_ms": 5.85,
+      "max_ms": 6.28,
+      "llamadas_por_frame": 0.05,
+      "pct_tiempo_pipeline": 0.4
+    },
+    "embedding": {
+      "n": 56,
+      "media_ms": 23.53,
+      "p50_ms": 21.42,
+      "p95_ms": 28.62,
+      "max_ms": 28.94,
+      "llamadas_por_frame": 0.05,
+      "pct_tiempo_pipeline": 2.3
+    },
+    "comparacion": {
+      "n": 56,
+      "media_ms": 0.04,
+      "p50_ms": 0.0,
+      "p95_ms": 0.4,
+      "max_ms": 0.5,
+      "llamadas_por_frame": 0.05,
+      "pct_tiempo_pipeline": 0.0
+    },
+    "gestos": {
+      "n": 0,
+      "llamadas_por_frame": 0.0,
+      "pct_tiempo_pipeline": 0.0
+    },
+    "tracking": {
+      "n": 1080,
+      "media_ms": 0.13,
+      "p50_ms": 0.12,
+      "p95_ms": 0.16,
+      "max_ms": 0.33,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 0.2
+    },
+    "objetos_hailo": {
+      "n": 1080,
+      "media_ms": 44.64,
+      "p50_ms": 44.32,
+      "p95_ms": 46.25,
+      "max_ms": 47.47,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 84.3
+    },
+    "mp_facemesh_inferencia": {
+      "n": 540,
+      "media_ms": 9.64,
+      "p50_ms": 9.17,
+      "p95_ms": 11.94,
+      "max_ms": 14.62,
+      "llamadas_por_frame": 0.5,
+      "pct_tiempo_pipeline": 9.1
+    },
+    "mp_holistic_inferencia": {
+      "n": 0,
+      "llamadas_por_frame": 0.0,
+      "pct_tiempo_pipeline": 0.0
+    },
+    "pipeline_total": {
+      "n": 1080,
+      "media_ms": 52.94,
+      "p50_ms": 51.87,
+      "p95_ms": 80.26,
+      "max_ms": 95.75,
+      "llamadas_por_frame": 1.0,
+      "pct_tiempo_pipeline": 100.0
+    }
+  },
+  "sistema": {
+    "cpu_total_pct": {
+      "media": 15.5,
+      "max": 18.4
+    },
+    "cpu_proceso_pct": {
+      "media": 30.0,
+      "max": 36.0
+    },
+    "rss_proceso_mb": {
+      "media": 225.8,
+      "max": 226.5
+    },
+    "ram_sistema_pct": {
+      "media": 23.1,
+      "max": 23.3
+    },
+    "temp_c": {
+      "media": 58.4,
+      "max": 59.5
+    },
+    "freq_mhz": {
+      "media": 2251.7,
+      "max": 2400.0
+    },
+    "nucleo_mas_cargado_pct": 16.1,
+    "ram_carga_modelos_mb": 31.7,
+    "throttled_fin": "throttled=0x0"
+  },
+  "contadores": {
+    "load_tflite_model_llamadas": 0,
+    "interpretes_mobilefacenet_creados": 1,
+    "facematcher_creados": 1,
+    "notificaciones_suprimidas": 1
+  },
+  "bd": {
+    "antes": {
+      "db_path": "/home/pi/PiVision-IA/database/pivision.db",
+      "existe": true,
+      "tabla": "events",
+      "eventos_por_tipo": {
+        "face": 474,
+        "gesture": 122,
+        "line_cross": 158,
+        "motion": 954,
+        "object": 76,
+        "people_count": 363
+      },
+      "eventos_en_prueba": {},
+      "rostros_conocidos": 0
+    },
+    "despues": {
+      "db_path": "/home/pi/PiVision-IA/database/pivision.db",
+      "existe": true,
+      "tabla": "events",
+      "eventos_por_tipo": {
+        "face": 481,
+        "gesture": 123,
+        "line_cross": 159,
+        "motion": 967,
+        "object": 78,
+        "people_count": 364
+      },
+      "eventos_en_prueba": {
+        "face": 7,
+        "gesture": 1,
+        "line_cross": 1,
+        "motion": 13,
+        "object": 2,
+        "people_count": 1
+      },
+      "rostros_conocidos": 0
+    },
+    "eventos_guardados_en_prueba": {
+      "face": 7,
+      "gesture": 1,
+      "line_cross": 1,
+      "motion": 13,
+      "object": 2,
+      "people_count": 1
+    }
+  },
+  "log_pipeline": {
+    "lineas": 1,
+    "menciona_acelerador": []
+  }
+}

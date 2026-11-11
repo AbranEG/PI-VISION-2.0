@@ -47,3 +47,13 @@ __pycache__/
 *.pyc
 .env
 venv/
+
+# --- PiVision 2.0 ---
+.venv/
+sessions/
+pivision.db
+database/*.db
+database/*.db-*
+ngrok*.zip
+!docs/
+!docs/**

@@ -1,8 +1,9 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
+from db import DB_PATH
 
 def init_users_db():
-    conn = sqlite3.connect("pivision.db")  
+    conn = sqlite3.connect(DB_PATH)  
     cursor = conn.cursor()
 
     # Crear tabla de usuarios si no existe

@@ -1,72 +1,120 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Iniciar Sesión - PiVision AI</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            font-family: sans-serif;
-            background-color: #111;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .login-container {
-            background-color: #222;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 0 10px #000;
-            width: 300px;
-        }
-        .login-container h2 {
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 0.5rem;
-            margin-bottom: 1rem;
-            border: none;
-            border-radius: 5px;
-            background-color: #333;
-            color: white;
-        }
-        button {
-            width: 100%;
-            padding: 0.5rem;
-            border: none;
-            border-radius: 5px;
-            background-color: #00b894;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .flash-message {
-            color: #ff7675;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f1d3a">
+  <title>Iniciar sesión · PiVision IA</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B396A'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%23e8ecf3' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%238fb4f0'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pivision.css') }}">
+  <style>
+    body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr); min-height: 100vh }
+    .hero { position: relative; overflow: hidden; padding: 48px 56px; display: flex; flex-direction: column; justify-content: space-between;
+            background: radial-gradient(1200px 600px at 10% 0%, #23488a 0%, transparent 60%),
+                        linear-gradient(160deg, #1B396A 0%, #12264a 55%, #0b1220 100%);
+            border-right: 1px solid var(--border) }
+    .hero::after { content: ""; position: absolute; right: -140px; bottom: -140px; width: 420px; height: 420px; border-radius: 50%;
+                   border: 2px solid rgba(143,180,240,.14); box-shadow: 0 0 0 40px rgba(143,180,240,.04), 0 0 0 90px rgba(143,180,240,.025) }
+    .hero .logo { display: flex; align-items: center; gap: 14px; font-size: 1.35rem; font-weight: 700 }
+    .hero .logo small { display: block; font-size: .78rem; font-weight: 500; color: #b9c8e6; letter-spacing: .4px }
+    .hero h1 { font-size: clamp(1.7rem, 3vw, 2.4rem); line-height: 1.15; letter-spacing: -.5px; max-width: 520px; margin: 48px 0 14px }
+    .hero p.lead { color: #c9d5ec; max-width: 480px; font-size: 1rem }
+    .feats { list-style: none; display: grid; gap: 14px; margin-top: 32px; max-width: 480px }
+    .feats li { display: flex; gap: 12px; align-items: flex-start; color: #dbe4f5; font-size: .93rem }
+    .feats svg { flex: none; width: 34px; height: 34px; padding: 7px; border-radius: 8px; background: rgba(255,255,255,.08);
+                 border: 1px solid rgba(255,255,255,.12); color: #e8ecf3 }
+    .feats b { display: block; color: #fff }
+    .hero .inst { color: #a9b8d6; font-size: .8rem; position: relative; z-index: 1 }
+
+    .side { display: flex; align-items: center; justify-content: center; padding: 32px 24px; background: var(--page) }
+    .card { width: 100%; max-width: 380px }
+    .card h2 { font-size: 1.5rem; font-weight: 700 }
+    .card .sub { color: var(--ink-3); margin: 4px 0 24px; font-size: .92rem }
+    form { display: grid; gap: 14px }
+    .pass { position: relative }
+    .pass input { padding-right: 70px }
+    .pass button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none;
+                   color: var(--brand-ink); font: inherit; font-size: .82rem; cursor: pointer; padding: 4px 6px }
+    .btn.primary.block { width: 100%; padding: 11px; font-size: .98rem; margin-top: 4px }
+    /* Avisos sin recuadro: solo texto con ícono */
+    .aviso { display: flex; align-items: center; gap: 7px; font-size: .88rem; margin: -10px 0 16px; color: var(--ink-2);
+             transition: opacity .6s }
+    .aviso svg { flex: none; width: 15px; height: 15px }
+    .aviso.success, .aviso.info, .aviso.message { color: #9be3bc }
+    .aviso.danger, .aviso.error, .aviso.warning { color: #ffb4b6 }
+    .aviso.oculto { opacity: 0 }
+
+    @media (max-width: 860px) {
+      body { grid-template-columns: 1fr }
+      .hero { padding: 28px 24px; border-right: none; border-bottom: 1px solid var(--border) }
+      .hero h1 { margin: 24px 0 8px; font-size: 1.5rem }
+      .feats, .hero .inst { display: none }
+      .side { align-items: flex-start; padding-top: 28px }
+    }
+  </style>
 </head>
 <body>
-    <div class="login-container">
-        <h2>PiVision Login</h2>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="flash-message">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-        <form method="POST">
-            <input type="text" name="username" placeholder="Usuario" required>
-            <input type="password" name="password" placeholder="Contraseña" required>
-            <button type="submit">Ingresar</button>
-        </form>
+  <section class="hero" aria-label="PiVision IA">
+    <div style="position: relative; z-index: 1">
+      <div class="logo">
+        <svg width="44" height="44" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="7" fill="#0f2348"/><rect x="0.5" y="0.5" width="31" height="31" rx="6.5" fill="none" stroke="#4a72b5"/>
+          <circle cx="16" cy="16" r="8" fill="none" stroke="#e8ecf3" stroke-width="2.5"/><circle cx="16" cy="16" r="3.2" fill="#8fb4f0"/>
+          <circle cx="24.5" cy="7.5" r="2" fill="#e5484d"/>
+        </svg>
+        <span>PiVision IA<small>Videovigilancia inteligente</small></span>
+      </div>
+      <h1>Monitoreo con visión artificial en el borde.</h1>
+      <p class="lead">Detección de personas, rostros, gestos y objetos en tiempo real sobre Raspberry Pi 5 con acelerador Hailo-8.</p>
+      <ul class="feats">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.9L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg>
+          <span><b>Video en vivo</b>Personas, objetos y gestos marcados sobre la imagen.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+          <span><b>Eventos con evidencia</b>Cada detección guarda su foto para revisarla y anotarla.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          <span><b>Reportes</b>Actividad por hora y día, exportable a CSV y PDF.</span></li>
+      </ul>
     </div>
+    <div class="inst">Residencia profesional · Ingeniería en Sistemas Computacionales<br>Tecnológico Nacional de México, campus Tijuana</div>
+  </section>
+
+  <main class="side">
+    <div class="card">
+      <h2>Iniciar sesión</h2>
+      <p class="sub">Ingresa con tu usuario del sistema.</p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <p class="aviso {{ category }}" role="{{ 'alert' if category in ('danger', 'error', 'warning') else 'status' }}">
+            {% if category in ('danger', 'error', 'warning') %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            {% endif %}
+            {{ message }}</p>
+        {% endfor %}
+      {% endwith %}
+      <form method="POST" autocomplete="on">
+        <label class="field" for="username">Usuario
+          <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+        </label>
+        <label class="field" for="password">Contraseña
+          <span class="pass">
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+            <button type="button" id="ver" aria-controls="password" aria-pressed="false">Mostrar</button>
+          </span>
+        </label>
+        <button class="btn primary block" type="submit">Ingresar</button>
+      </form>
+    </div>
+  </main>
+  <script>
+    setTimeout(() => document.querySelectorAll('.aviso.info, .aviso.success, .aviso.message')
+      .forEach(a => { a.classList.add('oculto'); setTimeout(() => a.remove(), 700); }), 4000);
+    const b = document.getElementById('ver'), p = document.getElementById('password');
+    b.addEventListener('click', () => {
+      const ver = p.type === 'password'; p.type = ver ? 'text' : 'password';
+      b.textContent = ver ? 'Ocultar' : 'Mostrar'; b.setAttribute('aria-pressed', ver);
+    });
+  </script>
 </body>
 </html>
